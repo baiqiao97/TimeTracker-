@@ -1,6 +1,7 @@
+using System.Collections.Concurrent;
+using System.Globalization;
 using System.IO;
 using System.Net;
-using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 
@@ -13,7 +14,7 @@ namespace TimeTracker
         private static DatabaseManager? _db;
         private const int MaxRequestBodySize = 1_000_000;
         private const int TokenExpiryDays = 30;
-        private static readonly Dictionary<string, (int userId, DateTime expires)> _tokens = [];
+        private static readonly ConcurrentDictionary<string, (int userId, DateTime expires)> _tokens = new();
 
         private static readonly JsonSerializerOptions _json = new()
             { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, WriteIndented = false };
@@ -103,11 +104,11 @@ namespace TimeTracker
             var expires = DateTime.UtcNow.AddDays(TokenExpiryDays);
             Exec("INSERT OR IGNORE INTO users(username,password,token,expires_at,created_at) VALUES(@u,@p,@t,@e,@c)",
                 ("@u", username), ("@p", PasswordHelper.Hash(password)),
-                ("@t", token), ("@e", expires.ToString("yyyy-MM-dd HH:mm:ss")),
-                ("@c", DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss")));
+                ("@t", token), ("@e", expires.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)),
+                ("@c", DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)));
 
             var uidRow = QueryFirst("SELECT id FROM users WHERE token=@t", ("@t", token));
-            var userId = uidRow != null ? Convert.ToInt32(uidRow["id"]) : 0;
+            var userId = uidRow != null ? Convert.ToInt32(uidRow["id"], CultureInfo.InvariantCulture) : 0;
             _tokens[token] = (userId, expires);
 
             Logger.Info($"User registered: {username} (id={userId})");
@@ -133,16 +134,16 @@ namespace TimeTracker
             var expiresStr = row["expires_at"]?.ToString();
 
             if (string.IsNullOrEmpty(token) || expiresStr == null ||
-                !DateTime.TryParse(expiresStr, out var expires) || expires < DateTime.UtcNow)
+                !DateTime.TryParse(expiresStr, CultureInfo.InvariantCulture, DateTimeStyles.None, out var expires) || expires < DateTime.UtcNow)
             {
                 token = Guid.NewGuid().ToString("N");
                 expires = DateTime.UtcNow.AddDays(TokenExpiryDays);
                 Exec("UPDATE users SET token=@t,expires_at=@e WHERE id=@id",
-                    ("@t", token), ("@e", expires.ToString("yyyy-MM-dd HH:mm:ss")),
+                    ("@t", token), ("@e", expires.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)),
                     ("@id", row["id"]!));
             }
 
-            var uid = Convert.ToInt32(row["id"]);
+            var uid = Convert.ToInt32(row["id"], CultureInfo.InvariantCulture);
             _tokens[token] = (uid, expires);
             Logger.Info($"User logged in: {username} (id={uid})");
             return JsonSerializer.Serialize(new { token, expiresAt = expires, userId = row["id"] }, _json);
@@ -156,7 +157,7 @@ namespace TimeTracker
 
             var since = req.QueryString["since"];
             var records = _db!.GetTimeRecords(
-                since != null ? DateTime.Parse(since) : DateTime.MinValue,
+                since != null ? DateTime.Parse(since, CultureInfo.InvariantCulture) : DateTime.MinValue,
                 DateTime.MaxValue,
                 auth.Value.userId);
             return JsonSerializer.Serialize(records, _json);
@@ -176,7 +177,7 @@ namespace TimeTracker
                 var existing = _db!.GetAllRecordKeys(auth.Value.userId);
                 var toAdd = records.Where(r =>
                 {
-                    if (!DateTime.TryParse(r.Date, out var recordDate)) return false;
+                    if (!DateTime.TryParse(r.Date, CultureInfo.InvariantCulture, DateTimeStyles.None, out var recordDate)) return false;
                     var key = $"{recordDate:yyyyMMdd}|{r.ProcessName}|{r.DeviceId}";
                     return !existing.Contains(key);
                 }).ToList();
@@ -190,14 +191,14 @@ namespace TimeTracker
         private static (int userId, string token)? GetAuth(HttpListenerRequest req)
         {
             var authHeader = req.Headers["Authorization"];
-            if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
+            if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer ", StringComparison.Ordinal))
                 return null;
             var token = authHeader["Bearer ".Length..].Trim();
             if (_tokens.TryGetValue(token, out var entry))
             {
                 if (entry.expires < DateTime.UtcNow)
                 {
-                    _tokens.Remove(token);
+                    _tokens.TryRemove(token, out _);
                     return null;
                 }
                 return (entry.userId, token);
@@ -205,10 +206,10 @@ namespace TimeTracker
             var row = QueryFirst("SELECT id,expires_at FROM users WHERE token=@t", ("@t", token));
             if (row == null) return null;
             var expiresStr = row["expires_at"]?.ToString();
-            if (expiresStr != null && DateTime.Parse(expiresStr) < DateTime.UtcNow)
+            if (expiresStr != null && DateTime.Parse(expiresStr, CultureInfo.InvariantCulture) < DateTime.UtcNow)
                 return null;
-            var uid = Convert.ToInt32(row["id"]);
-            _tokens[token] = (uid, expiresStr != null ? DateTime.Parse(expiresStr) : DateTime.MaxValue);
+            var uid = Convert.ToInt32(row["id"], CultureInfo.InvariantCulture);
+            _tokens[token] = (uid, expiresStr != null ? DateTime.Parse(expiresStr, CultureInfo.InvariantCulture) : DateTime.MaxValue);
             return (uid, token);
         }
 
@@ -218,7 +219,9 @@ namespace TimeTracker
         {
             using var c = new System.Data.SQLite.SQLiteConnection($"Data Source={DbPath};Version=3;");
             c.Open();
+#pragma warning disable CA2100
             using var cmd = new System.Data.SQLite.SQLiteCommand(sql, c);
+#pragma warning restore CA2100
             foreach (var (k, v) in prms)
                 cmd.Parameters.AddWithValue(k, v ?? DBNull.Value);
             return cmd.ExecuteNonQuery();
@@ -228,7 +231,9 @@ namespace TimeTracker
         {
             using var c = new System.Data.SQLite.SQLiteConnection($"Data Source={DbPath};Version=3;");
             c.Open();
+#pragma warning disable CA2100
             using var cmd = new System.Data.SQLite.SQLiteCommand(sql, c);
+#pragma warning restore CA2100
             foreach (var (k, v) in prms)
                 cmd.Parameters.AddWithValue(k, v ?? DBNull.Value);
             using var r = cmd.ExecuteReader();
@@ -245,7 +250,10 @@ namespace TimeTracker
                 throw new InvalidOperationException("请求体过大");
             using var sr = new StreamReader(req.InputStream, Encoding.UTF8, detectEncodingFromByteOrderMarks: false,
                 bufferSize: 4096, leaveOpen: true);
-            return await sr.ReadToEndAsync();
+            var result = await sr.ReadToEndAsync();
+            if (result.Length > MaxRequestBodySize)
+                throw new InvalidOperationException("请求体过大");
+            return result;
         }
     }
 }

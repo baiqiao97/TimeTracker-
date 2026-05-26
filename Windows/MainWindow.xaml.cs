@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -253,7 +254,7 @@ namespace TimeTracker
             {
                 Dispatcher.Invoke(() =>
                 {
-                    lblCurrentApp.Text = status?.Replace("追踪中: ", "") ?? "就绪";
+                    lblCurrentApp.Text = status?.Replace("追踪中: ", "", StringComparison.Ordinal) ?? "就绪";
                 });
             };
             _trackingService.PauseStateChanged += (paused) =>
@@ -465,7 +466,7 @@ namespace TimeTracker
                     AnimateLabel(lblTotalTime, ts.TotalHours >= 1
                         ? $"{(int)ts.TotalHours}h {ts.Minutes}m"
                         : $"{ts.Minutes}m {ts.Seconds}s");
-                    AnimateLabel(lblAppCount, topApps.Count.ToString());
+                    AnimateLabel(lblAppCount, topApps.Count.ToString(CultureInfo.InvariantCulture));
                 });
             }
             catch (Exception ex)

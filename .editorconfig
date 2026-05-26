@@ -1,0 +1,36 @@
+root = true
+
+[*]
+indent_style = space
+indent_size = 4
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+[*.cs]
+dotnet_diagnostic.CA1031.severity = none     # catch general exception is intentional with logging
+dotnet_diagnostic.CA2007.severity = none     # ConfigureAwait not needed for WPF/convenience
+dotnet_diagnostic.CA1812.severity = none     # top-level-statement record types are instantiated via DI/JSON
+dotnet_diagnostic.CA1852.severity = none     # sealing internal record types is unnecessary noise
+dotnet_diagnostic.CA1062.severity = none     # null param validation not critical for internal-only code
+dotnet_diagnostic.CA1054.severity = none     # Uri type not needed for simple string URL params
+dotnet_diagnostic.CA2234.severity = none     # HttpClient methods accept string URI fine
+
+# Culture-specific rules: enforce InvariantCulture for global/backend code
+dotnet_diagnostic.CA1305.severity = warning
+dotnet_diagnostic.CA1307.severity = warning
+dotnet_diagnostic.CA1310.severity = warning
+
+# Disposable / security rules: keep as error
+dotnet_diagnostic.CA1001.severity = suggestion
+dotnet_diagnostic.CA2000.severity = suggestion
+dotnet_diagnostic.CA2100.severity = warning   # SQL injection check - hardcoded SQL is safe
+
+[Server/Program.cs]
+dotnet_diagnostic.CA2100.severity = none      # hardcoded SQL strings, no user input
+dotnet_diagnostic.CA2000.severity = none      # brief SqliteCommand usings are fine
+
+[Windows/*.cs]
+dotnet_diagnostic.CA1822.severity = warning
+dotnet_diagnostic.CA5392.severity = none      # P/Invoke on Windows-only app is fine
+dotnet_diagnostic.CA2101.severity = none      # P/Invoke char marshaling is OS-native

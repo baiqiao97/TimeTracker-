@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Text.Json;
@@ -54,8 +55,8 @@ namespace TimeTracker
                 var duration = TimeSpan.FromMilliseconds(r.UsageTime);
                 var readable = duration.TotalHours >= 1
                     ? $"{(int)duration.TotalHours}h{duration.Minutes}m" : $"{duration.Minutes}m{duration.Seconds}s";
-                var title = (r.WindowTitle ?? "").Replace("\"", "\"\"");
-                sb.AppendLine($"{r.Date},{r.ProcessName},\"{title}\",{r.UsageTime},{readable},{r.DeviceId},{r.CategoryId},{(r.IsForeground ? 1 : 0)}");
+                var title = (r.WindowTitle ?? "").Replace("\"", "\"\"", StringComparison.Ordinal);
+                sb.AppendLine(CultureInfo.InvariantCulture, $"{r.Date},{r.ProcessName},\"{title}\",{r.UsageTime},{readable},{r.DeviceId},{r.CategoryId},{(r.IsForeground ? 1 : 0)}");
             }
             File.WriteAllText(path, sb.ToString(), Encoding.UTF8);
         }

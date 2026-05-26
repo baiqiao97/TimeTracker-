@@ -1,5 +1,6 @@
 using Microsoft.Data.Sqlite;
 using System.Collections.Concurrent;
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -45,7 +46,7 @@ string? CheckRateLimit(HttpRequest req, int maxPerMinute)
 app.Use(async (context, next) =>
 {
     var path = context.Request.Path.Value ?? "";
-    int limit = path.StartsWith("/api/auth") ? AuthRateLimitPerMinute : RateLimitPerMinute;
+    int limit = path.StartsWith("/api/auth", StringComparison.Ordinal) ? AuthRateLimitPerMinute : RateLimitPerMinute;
     var rateError = CheckRateLimit(context.Request, limit);
     if (rateError != null)
     {
@@ -69,10 +70,10 @@ app.MapPost("/api/auth/register", (AuthReq req) =>
         return Results.Conflict(new { error = "用户名已存在" });
 
     var token = Guid.NewGuid().ToString("N");
-    var expires = DateTime.UtcNow.AddDays(TokenExpiryDays).ToString("yyyy-MM-dd HH:mm:ss");
+    var expires = DateTime.UtcNow.AddDays(TokenExpiryDays).ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
     Exec(dbPath, "INSERT INTO users(username,password,token,expires_at,created_at) VALUES(@u,@p,@t,@e,@c)",
         ("@u", req.Username), ("@p", Hash(req.Password)),
-        ("@t", token), ("@e", expires), ("@c", DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss")));
+        ("@t", token), ("@e", expires), ("@c", DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)));
     var uid = QueryFirst(dbPath, "SELECT id FROM users WHERE token=@t", ("@t", token));
     return Results.Ok(new { token, expiresAt = expires, userId = uid?["id"] ?? 0 });
 });
@@ -86,11 +87,11 @@ app.MapPost("/api/auth/login", (AuthReq req) =>
         return Results.Unauthorized();
     var token = row["token"]?.ToString();
     var expiresStr = row["expires_at"]?.ToString();
-    if (string.IsNullOrEmpty(token) || (expiresStr != null && DateTime.Parse(expiresStr) < DateTime.UtcNow))
+    if (string.IsNullOrEmpty(token) || (expiresStr != null && DateTime.Parse(expiresStr, CultureInfo.InvariantCulture) < DateTime.UtcNow))
     {
         token = Guid.NewGuid().ToString("N");
         Exec(dbPath, "UPDATE users SET token=@t,expires_at=@e WHERE id=@id",
-            ("@t", token), ("@e", DateTime.UtcNow.AddDays(TokenExpiryDays).ToString("yyyy-MM-dd HH:mm:ss")),
+            ("@t", token), ("@e", DateTime.UtcNow.AddDays(TokenExpiryDays).ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)),
             ("@id", row["id"]!));
     }
     return Results.Ok(new { token, userId = row["id"] });
@@ -151,14 +152,14 @@ static void InitDb(string path)
 
 static (int userId, string token)? GetAuth(string path, HttpRequest req)
 {
-    var token = req.Headers.Authorization.FirstOrDefault()?.Replace("Bearer ", "");
+    var token = req.Headers.Authorization.FirstOrDefault()?.Replace("Bearer ", "", StringComparison.Ordinal);
     if (string.IsNullOrEmpty(token)) return null;
     var row = QueryFirst(path, "SELECT id,expires_at FROM users WHERE token=@t", ("@t", token));
     if (row == null) return null;
     var expiresStr = row["expires_at"]?.ToString();
-    if (expiresStr != null && DateTime.Parse(expiresStr) < DateTime.UtcNow)
+    if (expiresStr != null && DateTime.Parse(expiresStr, CultureInfo.InvariantCulture) < DateTime.UtcNow)
         return null;
-    return (Convert.ToInt32(row["id"]), token);
+    return (Convert.ToInt32(row["id"], CultureInfo.InvariantCulture), token);
 }
 
 const int SaltSize = 16;

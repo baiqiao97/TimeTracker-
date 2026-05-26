@@ -231,7 +231,7 @@ namespace TimeTracker
             }
         }
 
-        private WindowInfo? GetActiveWindowInfo()
+        private static WindowInfo? GetActiveWindowInfo()
         {
             try
             {
@@ -343,10 +343,10 @@ namespace TimeTracker
                             _deviceId, categoryId, false,
                             AppSettings.CurrentActivityId);
                     }
-            catch (Exception ex)
-            {
-                Logger.Error("Database insert error", ex);
-            }
+                    catch (Exception ex)
+                    {
+                        Logger.Error("Database insert error", ex);
+                    }
                 }
 
                 _currentProcessName = "Background";
@@ -375,7 +375,7 @@ namespace TimeTracker
                         ProcessName = kvp.Key,
                         WindowTitle = kvp.Value.WindowTitle,
                         UsageTime = kvp.Value.UsageTime,
-                        Date = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                        Date = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture),
                         DeviceId = _deviceId,
                         CategoryId = categoryId,
                         IsForeground = isForeground,
@@ -424,7 +424,7 @@ namespace TimeTracker
     /// <summary>
     /// 待写入数据库的记录，包含每个进程自身的窗口标题
     /// </summary>
-    internal class PendingRecord
+    internal sealed class PendingRecord
     {
         public long UsageTime { get; set; }
         public string WindowTitle { get; set; } = string.Empty;

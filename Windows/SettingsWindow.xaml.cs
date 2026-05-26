@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.IO;
 using System.Text.Json;
 using System.Windows;
@@ -59,27 +60,27 @@ namespace TimeTracker
             ServerUrl = serverUrl; AutoSync = autoSync;
             HostServer = hostServer; ServerPort = serverPort;
             MinPasswordLength = minPasswordLength;
-            txtInterval.Text = interval.ToString();
-            txtRetentionDays.Text = retention.ToString();
+            txtInterval.Text = interval.ToString(CultureInfo.InvariantCulture);
+            txtRetentionDays.Text = retention.ToString(CultureInfo.InvariantCulture);
             chkAutoStart.IsChecked = autoStart;
             if (mode == "activity") rbActivity.IsChecked = true; else rbSimple.IsChecked = true;
             txtServerUrl.Text = serverUrl;
             chkAutoSync.IsChecked = autoSync;
             chkHostServer.IsChecked = hostServer;
-            txtMinPwdLen.Text = minPasswordLength.ToString();
+            txtMinPwdLen.Text = minPasswordLength.ToString(CultureInfo.InvariantCulture);
         }
 
         private void LoadDefaults()
         {
-            txtInterval.Text = TrackingIntervalSeconds.ToString();
-            txtRetentionDays.Text = RetentionDays.ToString();
+            txtInterval.Text = TrackingIntervalSeconds.ToString(CultureInfo.InvariantCulture);
+            txtRetentionDays.Text = RetentionDays.ToString(CultureInfo.InvariantCulture);
             chkAutoStart.IsChecked = AutoStart;
             rbSimple.IsChecked = true;
             txtServerUrl.Text = AppSettings.ServerUrl;
             chkAutoSync.IsChecked = AppSettings.AutoSync;
             chkHostServer.IsChecked = AppSettings.HostServer;
-            txtServerPort.Text = AppSettings.ServerPort.ToString();
-            txtMinPwdLen.Text = AppSettings.MinPasswordLength.ToString();
+            txtServerPort.Text = AppSettings.ServerPort.ToString(CultureInfo.InvariantCulture);
+            txtMinPwdLen.Text = AppSettings.MinPasswordLength.ToString(CultureInfo.InvariantCulture);
             RefreshAccountStatus();
         }
 

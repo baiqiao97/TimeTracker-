@@ -1,4 +1,5 @@
 using System.Data.SQLite;
+using System.Globalization;
 using System.IO;
 
 namespace TimeTracker
@@ -44,11 +45,13 @@ namespace TimeTracker
                     "CREATE TABLE IF NOT EXISTS activities (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, color TEXT DEFAULT '#6c5ce7', icon TEXT DEFAULT '📌')"
                 ];
 
+#pragma warning disable CA2100
                 foreach (var sql in tables)
                 {
                     using var cmd = new SQLiteCommand(sql, connection);
                     cmd.ExecuteNonQuery();
                 }
+#pragma warning restore CA2100
 
                 try {
                     using var alterCmd = new SQLiteCommand("ALTER TABLE time_records ADD COLUMN activity_id INTEGER DEFAULT NULL", connection);
@@ -82,7 +85,7 @@ namespace TimeTracker
             command.Parameters.AddWithValue("@processName", processName);
             command.Parameters.AddWithValue("@windowTitle", (object?)windowTitle ?? DBNull.Value);
             command.Parameters.AddWithValue("@usageTime", usageTime);
-            command.Parameters.AddWithValue("@date", DateTime.Now.ToString(DateFormat));
+            command.Parameters.AddWithValue("@date", DateTime.Now.ToString(DateFormat, CultureInfo.InvariantCulture));
             command.Parameters.AddWithValue("@deviceId", deviceId);
             command.Parameters.AddWithValue("@categoryId", categoryId.HasValue ? categoryId.Value : DBNull.Value);
             command.Parameters.AddWithValue("@isForeground", isForeground ? 1 : 0);
@@ -153,7 +156,7 @@ namespace TimeTracker
             {
                 categories.Add(new CategoryData
                 {
-                    Id = Convert.ToInt32(reader["id"]),
+                    Id = Convert.ToInt32(reader["id"], CultureInfo.InvariantCulture),
                     Name = reader["name"].ToString()!,
                     Color = reader["color"].ToString()!,
                     Description = reader["description"].ToString()!
@@ -199,7 +202,7 @@ namespace TimeTracker
             while (reader.Read())
                 list.Add(new ActivityData
                 {
-                    Id = Convert.ToInt32(reader["id"]),
+                    Id = Convert.ToInt32(reader["id"], CultureInfo.InvariantCulture),
                     Name = reader["name"].ToString()!,
                     Color = reader["color"].ToString()!,
                     Icon = reader["icon"].ToString()!
@@ -233,15 +236,15 @@ namespace TimeTracker
                 GROUP BY tr.process_name ORDER BY total_usage DESC";
             using var conn = CreateConnection();
             using var cmd = new SQLiteCommand(query, conn);
-            cmd.Parameters.AddWithValue("@s", start.ToString(DateFormat));
-            cmd.Parameters.AddWithValue("@e", end.ToString(DateFormat));
+            cmd.Parameters.AddWithValue("@s", start.ToString(DateFormat, CultureInfo.InvariantCulture));
+            cmd.Parameters.AddWithValue("@e", end.ToString(DateFormat, CultureInfo.InvariantCulture));
             cmd.Parameters.AddWithValue("@aid", activityId);
             using var r = cmd.ExecuteReader();
             while (r.Read())
                 result.Add(new ProcessUsageData
                 {
                     ProcessName = r["process_name"].ToString()!,
-                    TotalUsage = Convert.ToInt64(r["total_usage"]),
+                    TotalUsage = Convert.ToInt64(r["total_usage"], CultureInfo.InvariantCulture),
                     CategoryName = r["category_name"] != DBNull.Value ? r["category_name"].ToString()! : "未分类"
                 });
             return result;
@@ -256,16 +259,16 @@ namespace TimeTracker
                 GROUP BY a.id ORDER BY total_usage DESC";
             using var conn = CreateConnection();
             using var cmd = new SQLiteCommand(query, conn);
-            cmd.Parameters.AddWithValue("@s", start.ToString(DateFormat));
-            cmd.Parameters.AddWithValue("@e", end.ToString(DateFormat));
+            cmd.Parameters.AddWithValue("@s", start.ToString(DateFormat, CultureInfo.InvariantCulture));
+            cmd.Parameters.AddWithValue("@e", end.ToString(DateFormat, CultureInfo.InvariantCulture));
             using var r = cmd.ExecuteReader();
             while (r.Read())
                 result.Add(new ActivityUsageData
                 {
-                    Id = Convert.ToInt32(r["id"]),
+                    Id = Convert.ToInt32(r["id"], CultureInfo.InvariantCulture),
                     Name = r["name"].ToString()!,
                     Color = r["color"].ToString()!,
-                    TotalUsage = Convert.ToInt64(r["total_usage"])
+                    TotalUsage = Convert.ToInt64(r["total_usage"], CultureInfo.InvariantCulture)
                 });
             return result;
         }
@@ -284,8 +287,8 @@ namespace TimeTracker
 
             using var connection = CreateConnection();
             using var command = new SQLiteCommand(query, connection);
-            command.Parameters.AddWithValue("@startDate", startDate.ToString(DateFormat));
-            command.Parameters.AddWithValue("@endDate", endDate.ToString(DateFormat));
+            command.Parameters.AddWithValue("@startDate", startDate.ToString(DateFormat, CultureInfo.InvariantCulture));
+            command.Parameters.AddWithValue("@endDate", endDate.ToString(DateFormat, CultureInfo.InvariantCulture));
             if (userId.HasValue) command.Parameters.AddWithValue("@userId", userId.Value);
             using var reader = command.ExecuteReader();
             while (reader.Read())
@@ -309,15 +312,15 @@ namespace TimeTracker
 
             using var connection = CreateConnection();
             using var command = new SQLiteCommand(query, connection);
-            command.Parameters.AddWithValue("@startDate", startDate.ToString(DateFormat));
-            command.Parameters.AddWithValue("@endDate", endDate.ToString(DateFormat));
+            command.Parameters.AddWithValue("@startDate", startDate.ToString(DateFormat, CultureInfo.InvariantCulture));
+            command.Parameters.AddWithValue("@endDate", endDate.ToString(DateFormat, CultureInfo.InvariantCulture));
             using var reader = command.ExecuteReader();
             while (reader.Read())
             {
                 result.Add(new ProcessUsageData
                 {
                     ProcessName = reader["process_name"].ToString()!,
-                    TotalUsage = Convert.ToInt64(reader["total_usage"]),
+                    TotalUsage = Convert.ToInt64(reader["total_usage"], CultureInfo.InvariantCulture),
                     CategoryName = reader["category_name"] != DBNull.Value
                         ? reader["category_name"].ToString()!
                         : "未分类"
@@ -340,8 +343,8 @@ namespace TimeTracker
 
             using var connection = CreateConnection();
             using var command = new SQLiteCommand(query, connection);
-            command.Parameters.AddWithValue("@startDate", startDate.ToString(DateFormat));
-            command.Parameters.AddWithValue("@endDate", endDate.ToString(DateFormat));
+            command.Parameters.AddWithValue("@startDate", startDate.ToString(DateFormat, CultureInfo.InvariantCulture));
+            command.Parameters.AddWithValue("@endDate", endDate.ToString(DateFormat, CultureInfo.InvariantCulture));
             using var reader = command.ExecuteReader();
             while (reader.Read())
             {
@@ -350,7 +353,7 @@ namespace TimeTracker
                     CategoryName = reader["category_name"] != DBNull.Value
                         ? reader["category_name"].ToString()!
                         : "未分类",
-                    TotalUsage = Convert.ToInt64(reader["total_usage"])
+                    TotalUsage = Convert.ToInt64(reader["total_usage"], CultureInfo.InvariantCulture)
                 });
             }
             return result;
@@ -368,15 +371,15 @@ namespace TimeTracker
 
             using var connection = CreateConnection();
             using var command = new SQLiteCommand(query, connection);
-            command.Parameters.AddWithValue("@startDate", startDate.ToString(DateFormat));
-            command.Parameters.AddWithValue("@endDate", endDate.ToString(DateFormat));
+            command.Parameters.AddWithValue("@startDate", startDate.ToString(DateFormat, CultureInfo.InvariantCulture));
+            command.Parameters.AddWithValue("@endDate", endDate.ToString(DateFormat, CultureInfo.InvariantCulture));
             using var reader = command.ExecuteReader();
             while (reader.Read())
             {
                 result.Add(new ForegroundStatsData
                 {
                     Type = reader["type"].ToString()!,
-                    TotalUsage = Convert.ToInt64(reader["total_usage"])
+                    TotalUsage = Convert.ToInt64(reader["total_usage"], CultureInfo.InvariantCulture)
                 });
             }
             return result;
@@ -407,10 +410,10 @@ namespace TimeTracker
             using var command = new SQLiteCommand(query, connection);
             command.Parameters.AddWithValue("@processName", processName);
             command.Parameters.AddWithValue("@deviceId", deviceId);
-            command.Parameters.AddWithValue("@startDate", startDate.ToString(DateFormat));
-            command.Parameters.AddWithValue("@endDate", endDate.ToString(DateFormat));
+            command.Parameters.AddWithValue("@startDate", startDate.ToString(DateFormat, CultureInfo.InvariantCulture));
+            command.Parameters.AddWithValue("@endDate", endDate.ToString(DateFormat, CultureInfo.InvariantCulture));
             var result = command.ExecuteScalar();
-            return Convert.ToInt32(result) > 0;
+            return Convert.ToInt32(result, CultureInfo.InvariantCulture) > 0;
         }
 
         public void DeleteOldRecords(DateTime cutoffDate)
@@ -418,7 +421,7 @@ namespace TimeTracker
             const string query = "DELETE FROM time_records WHERE date < @cutoffDate";
             using var connection = CreateConnection();
             using var command = new SQLiteCommand(query, connection);
-            command.Parameters.AddWithValue("@cutoffDate", cutoffDate.ToString(DateFormat));
+            command.Parameters.AddWithValue("@cutoffDate", cutoffDate.ToString(DateFormat, CultureInfo.InvariantCulture));
             command.ExecuteNonQuery();
         }
 
@@ -456,7 +459,7 @@ namespace TimeTracker
             command.Parameters.AddWithValue("@deviceId", deviceId);
             command.Parameters.AddWithValue("@deviceName", deviceName);
             command.Parameters.AddWithValue("@platform", platform);
-            command.Parameters.AddWithValue("@lastSync", DateTime.Now.ToString(DateFormat));
+            command.Parameters.AddWithValue("@lastSync", DateTime.Now.ToString(DateFormat, CultureInfo.InvariantCulture));
             command.ExecuteNonQuery();
         }
 
@@ -464,23 +467,23 @@ namespace TimeTracker
         {
             return new TimeRecordData
             {
-                Id = Convert.ToInt32(reader["id"]),
+                Id = Convert.ToInt32(reader["id"], CultureInfo.InvariantCulture),
                 ProcessName = reader["process_name"].ToString()!,
                 WindowTitle = reader["window_title"] != DBNull.Value
                     ? reader["window_title"].ToString()!
                     : null,
-                UsageTime = Convert.ToInt64(reader["usage_time"]),
+                UsageTime = Convert.ToInt64(reader["usage_time"], CultureInfo.InvariantCulture),
                 Date = reader["date"].ToString()!,
                 DeviceId = reader["device_id"].ToString()!,
                 CategoryId = reader["category_id"] != DBNull.Value
-                    ? Convert.ToInt32(reader["category_id"])
+                    ? Convert.ToInt32(reader["category_id"], CultureInfo.InvariantCulture)
                     : null,
-                IsForeground = Convert.ToInt32(reader["is_foreground"]) == 1,
+                IsForeground = Convert.ToInt32(reader["is_foreground"], CultureInfo.InvariantCulture) == 1,
                 CategoryName = reader["category_name"] != DBNull.Value
                     ? reader["category_name"].ToString()!
                     : null,
                 UserId = reader["user_id"] != DBNull.Value
-                    ? Convert.ToInt32(reader["user_id"])
+                    ? Convert.ToInt32(reader["user_id"], CultureInfo.InvariantCulture)
                     : null
             };
         }
