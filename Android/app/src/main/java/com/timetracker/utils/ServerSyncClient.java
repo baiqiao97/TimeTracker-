@@ -56,31 +56,35 @@ public class ServerSyncClient {
     }
 
     public static AuthResult register(Context ctx, String username, String password) {
+        HttpURLConnection conn = null;
         try {
             String json = GSON.toJson(new AuthRequest(username, password));
-            HttpURLConnection conn = post(ctx, "/api/auth/register", json);
+            conn = post(ctx, "/api/auth/register", json);
             String body = readResponse(conn);
 
             if (conn.getResponseCode() != 200) {
                 AuthError err = GSON.fromJson(body, AuthError.class);
-                return new AuthResult(false, err.error, null);
+                return new AuthResult(false, err != null ? err.error : "Unknown error", null);
             }
 
             AuthResponse resp = GSON.fromJson(body, AuthResponse.class);
-            if (resp.token != null) {
+            if (resp != null && resp.token != null) {
                 AppSettings.setAuthToken(ctx, resp.token);
             }
-            return new AuthResult(true, null, resp.token);
+            return new AuthResult(true, null, resp != null ? resp.token : null);
         } catch (Exception e) {
             Log.e(TAG, "Register error", e);
             return new AuthResult(false, e.getMessage(), null);
+        } finally {
+            if (conn != null) conn.disconnect();
         }
     }
 
     public static AuthResult login(Context ctx, String username, String password) {
+        HttpURLConnection conn = null;
         try {
             String json = GSON.toJson(new AuthRequest(username, password));
-            HttpURLConnection conn = post(ctx, "/api/auth/login", json);
+            conn = post(ctx, "/api/auth/login", json);
             String body = readResponse(conn);
 
             if (conn.getResponseCode() != 200) {
@@ -90,13 +94,15 @@ public class ServerSyncClient {
             }
 
             AuthResponse resp = GSON.fromJson(body, AuthResponse.class);
-            if (resp.token != null) {
+            if (resp != null && resp.token != null) {
                 AppSettings.setAuthToken(ctx, resp.token);
             }
-            return new AuthResult(true, null, resp.token);
+            return new AuthResult(true, null, resp != null ? resp.token : null);
         } catch (Exception e) {
             Log.e(TAG, "Login error", e);
             return new AuthResult(false, e.getMessage(), null);
+        } finally {
+            if (conn != null) conn.disconnect();
         }
     }
 
@@ -104,6 +110,8 @@ public class ServerSyncClient {
         String token = AppSettings.getAuthToken(ctx);
         if (token.isEmpty()) return false;
 
+        HttpURLConnection dlConn = null;
+        HttpURLConnection ulConn = null;
         try {
             AppDatabase db = AppDatabase.getInstance(ctx);
 
@@ -113,7 +121,7 @@ public class ServerSyncClient {
                 dlUrl += "&since=" + DATE_FORMAT.format(new Date(lastSync));
             }
 
-            HttpURLConnection dlConn = get(ctx, dlUrl, token);
+            dlConn = get(ctx, dlUrl, token);
             String dlBody = readResponse(dlConn);
 
             if (dlConn.getResponseCode() == 200 && !dlBody.isEmpty()) {
@@ -170,9 +178,8 @@ public class ServerSyncClient {
 
             if (!mine.isEmpty()) {
                 String json = GSON.toJson(mine);
-                HttpURLConnection ulConn = post(ctx, "/api/sync/upload", json);
+                ulConn = post(ctx, "/api/sync/upload", json);
                 ulConn.getResponseCode();
-                ulConn.disconnect();
             }
 
             AppSettings.setLastSyncTime(ctx, System.currentTimeMillis());
@@ -181,6 +188,9 @@ public class ServerSyncClient {
         } catch (Exception e) {
             Log.e(TAG, "Sync error", e);
             return false;
+        } finally {
+            if (dlConn != null) dlConn.disconnect();
+            if (ulConn != null) ulConn.disconnect();
         }
     }
 

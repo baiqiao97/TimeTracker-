@@ -18,6 +18,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 public class DataSyncUtils {
@@ -62,9 +63,9 @@ public class DataSyncUtils {
                     .create();
             String json = gson.toJson(records);
 
-            FileWriter writer = new FileWriter(exportFile);
-            writer.write(json);
-            writer.close();
+            try (FileWriter writer = new FileWriter(exportFile)) {
+                writer.write(json);
+            }
 
             Log.d(TAG, "Data exported successfully to: " + exportFile.getAbsolutePath());
             return true;
@@ -87,9 +88,10 @@ public class DataSyncUtils {
             Gson gson = new GsonBuilder()
                     .setDateFormat("yyyy-MM-dd HH:mm:ss")
                     .create();
-            FileReader reader = new FileReader(exportFile);
-            TimeRecord[] recordsArray = gson.fromJson(reader, TimeRecord[].class);
-            reader.close();
+            TimeRecord[] recordsArray;
+            try (FileReader reader = new FileReader(exportFile)) {
+                recordsArray = gson.fromJson(reader, TimeRecord[].class);
+            }
 
             if (recordsArray == null || recordsArray.length == 0) {
                 Log.e(TAG, "No records found in export file");
