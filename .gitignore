@@ -1,0 +1,70 @@
+# === 构建产物 ===
+**/bin/
+**/obj/
+**/build/
+**/out/
+*.exe
+*.dll
+*.pdb
+*.so
+*.dylib
+*.dex
+*.apk
+*.aab
+*.aar
+
+# === .NET ===
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.userprefs
+*.pubxml
+*.pubxml.user
+launchSettings.json
+appsettings.Development.json
+
+# === VS Code ===
+.vscode/
+*.code-workspace
+
+# === IntelliJ / Android Studio ===
+.idea/
+*.iml
+*.iws
+*.ipr
+local.properties
+.gradle/
+captures/
+.externalNativeBuild/
+.cxx/
+*.hprof
+
+# === Python / 脚本 ===
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+
+# === 系统 ===
+Thumbs.db
+.DS_Store
+*.swp
+*.swo
+*~
+Desktop.ini
+
+# === 运行时数据 ===
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+settings.json
+timetracker.db*
+
+# === 日志 / 临时 ===
+*.log
+logs/
+build*.txt
+*_output.txt

@@ -1,0 +1,16 @@
+<resources>
+    <string name="app_name">TimeTracker</string>
+    <string name="title_activity_main">TimeTracker</string>
+    <string name="action_settings">Settings</string>
+    <string name="export_data">Export Data</string>
+    <string name="import_data">Import Data</string>
+    <string name="usage_stats_permission">Enable Usage Stats Permission</string>
+    <string name="tracking_started">Tracking started</string>
+    <string name="tracking_stopped">Tracking stopped</string>
+    <string name="daily_stats">Daily Stats</string>
+    <string name="weekly_stats">Weekly Stats</string>
+    <string name="monthly_stats">Monthly Stats</string>
+    <string name="total_usage">Total Usage</string>
+    <string name="top_apps">Top Apps</string>
+    <string name="sync_data">Sync Data</string>
+</resources>

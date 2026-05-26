@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#f0f2f5">
+
+    <!-- 顶部栏 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:background="#1a1d2e"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="16dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="TimeTracker"
+            android:textColor="#ffffff"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/btn_settings"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:text="⚙"
+            android:textSize="16sp"
+            android:textColor="#a0aec0"
+            android:background="#00ffffff"/>
+    </LinearLayout>
+
+    <!-- 活动选择器 -->
+    <LinearLayout
+        android:id="@+id/activityBar"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:background="#6c5ce7"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="14dp"
+        android:visibility="gone">
+
+        <Spinner
+            android:id="@+id/spActivity"
+            android:layout_width="0dp"
+            android:layout_height="34dp"
+            android:layout_weight="1"
+            android:background="@drawable/spinner_bg_light"
+            android:paddingStart="10dp"/>
+
+        <Button
+            android:id="@+id/btnAddActivityMain"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:text="+"
+            android:textSize="20sp"
+            android:textColor="#ffffff"
+            android:background="#00ffffff"
+            android:layout_marginStart="8dp"/>
+    </LinearLayout>
+
+    <!-- 统计卡片 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="12dp">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:background="@drawable/card_bg"
+            android:padding="16dp"
+            android:layout_marginEnd="6dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="总使用时长"
+                android:textColor="#6b7280"
+                android:textSize="11sp"/>
+
+            <TextView
+                android:id="@+id/tv_total_usage"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="--"
+                android:textColor="#1a1d2e"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:layout_marginTop="2dp"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:background="@drawable/card_bg"
+            android:padding="16dp"
+            android:layout_marginStart="6dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="活跃状态"
+                android:textColor="#6b7280"
+                android:textSize="11sp"/>
+
+            <TextView
+                android:id="@+id/tv_status"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="追踪中"
+                android:textColor="#10b981"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:layout_marginTop="2dp"/>
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- 日期切换 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:orientation="horizontal"
+        android:paddingHorizontal="12dp"
+        android:layout_marginBottom="8dp">
+
+        <Button android:id="@+id/btn_daily"
+            android:layout_width="0dp" android:layout_height="40dp" android:layout_weight="1"
+            android:text="每日" android:textSize="13sp" android:layout_marginEnd="6dp"
+            android:background="@drawable/btn_range" android:textColor="#6b7280"/>
+
+        <Button android:id="@+id/btn_weekly"
+            android:layout_width="0dp" android:layout_height="40dp" android:layout_weight="1"
+            android:text="每周" android:textSize="13sp" android:layout_marginEnd="6dp"
+            android:background="@drawable/btn_range" android:textColor="#6b7280"/>
+
+        <Button android:id="@+id/btn_monthly"
+            android:layout_width="0dp" android:layout_height="40dp" android:layout_weight="1"
+            android:text="每月" android:textSize="13sp"
+            android:background="@drawable/btn_range" android:textColor="#6b7280"/>
+    </LinearLayout>
+
+    <!-- 应用排行 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:paddingHorizontal="12dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="应用使用排行"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="#1a1d2e"
+            android:layout_marginBottom="8dp"
+            android:layout_marginStart="4dp"/>
+
+        <ListView
+            android:id="@+id/lv_top_apps"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/card_bg"
+            android:divider="#f3f4f6"
+            android:dividerHeight="1dp"
+            android:padding="4dp"
+            android:clipToPadding="false"/>
+    </LinearLayout>
+
+    <!-- 底部操作栏 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:orientation="horizontal"
+        android:background="#ffffff"
+        android:gravity="center"
+        android:paddingHorizontal="8dp">
+
+        <Button android:id="@+id/btn_chart"
+            android:layout_width="0dp" android:layout_height="44dp" android:layout_weight="1"
+            android:text="📊 图表" android:textSize="12sp" android:textColor="#6c5ce7"
+            android:background="#f4f4fa" android:layout_marginEnd="6dp"/>
+
+        <Button android:id="@+id/btn_categories"
+            android:layout_width="0dp" android:layout_height="44dp" android:layout_weight="1"
+            android:text="🏷 标签" android:textSize="12sp" android:textColor="#10b981"
+            android:background="#ecfdf5" android:layout_marginEnd="6dp"/>
+
+        <Button android:id="@+id/btn_pause"
+            android:layout_width="0dp" android:layout_height="44dp" android:layout_weight="1"
+            android:text="⏸ 暂停" android:textSize="12sp" android:textColor="#f59e0b"
+            android:background="#fffbeb"/>
+    </LinearLayout>
+
+</LinearLayout>

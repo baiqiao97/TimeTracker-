@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#f0f2f5"
+    android:padding="16dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="追踪设置"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:textColor="#1a1d2e"
+        android:layout_marginBottom="16dp"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@drawable/card_bg"
+        android:padding="16dp"
+        android:layout_marginBottom="16dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="追踪模式"
+            android:textSize="13sp"
+            android:textColor="#6b7280"
+            android:layout_marginBottom="10dp"/>
+
+        <RadioGroup
+            android:id="@+id/rgTrackingMode"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <RadioButton
+                android:id="@+id/rbSimple"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="标准模式"
+                android:textSize="14sp"
+                android:textColor="#1a1d2e"/>
+
+            <RadioButton
+                android:id="@+id/rbActivity"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="活动模式"
+                android:textSize="14sp"
+                android:textColor="#1a1d2e"/>
+        </RadioGroup>
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/activitySection"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@drawable/card_bg"
+        android:padding="16dp"
+        android:layout_marginBottom="16dp"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="管理活动"
+            android:textSize="13sp"
+            android:textColor="#6b7280"
+            android:layout_marginBottom="10dp"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="10dp">
+
+            <EditText
+                android:id="@+id/etActivityName"
+                android:layout_width="0dp"
+                android:layout_height="44dp"
+                android:layout_weight="1"
+                android:hint="新活动名称"
+                android:textSize="13sp"
+                android:paddingStart="10dp"
+                android:background="@drawable/edit_bg"/>
+
+            <Button
+                android:id="@+id/btnAddActivity"
+                android:layout_width="64dp"
+                android:layout_height="44dp"
+                android:text="添加"
+                android:textColor="#ffffff"
+                android:textSize="13sp"
+                android:backgroundTint="#6c5ce7"
+                android:layout_marginStart="8dp"/>
+        </LinearLayout>
+
+        <ListView
+            android:id="@+id/lvActivities"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:divider="#f3f4f6"
+            android:dividerHeight="1dp"/>
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/btnSaveSettings"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:text="保存设置"
+        android:textColor="#ffffff"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        android:backgroundTint="#6c5ce7"/>
+
+</LinearLayout>

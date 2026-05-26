@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="52dp"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingHorizontal="12dp">
+
+    <View
+        android:id="@+id/view_cat_color"
+        android:layout_width="14dp"
+        android:layout_height="14dp"
+        android:layout_marginEnd="10dp"
+        android:background="@drawable/dot_bg"/>
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tv_cat_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="13sp"
+            android:textColor="#1a1d2e"/>
+
+        <TextView
+            android:id="@+id/tv_cat_desc"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="11sp"
+            android:textColor="#6b7280"
+            android:layout_marginTop="1dp"/>
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/btn_delete_category"
+        android:layout_width="40dp"
+        android:layout_height="32dp"
+        android:text="🗑"
+        android:textSize="14sp"
+        android:textColor="#ef4444"
+        android:background="#00ffffff"/>
+
+</LinearLayout>
