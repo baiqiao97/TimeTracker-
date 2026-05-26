@@ -45,21 +45,9 @@
             <Setter Property="Height" Value="30"/>
             <Setter Property="Margin" Value="3"/>
             <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Grid>
-                            <Ellipse x:Name="dot" Fill="{TemplateBinding Tag}" Width="24" Height="24"/>
-                            <Ellipse x:Name="ring" Stroke="Transparent" StrokeThickness="2" Width="30" Height="30"/>
-                        </Grid>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="ring" Property="Stroke" Value="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
         </Style>
 
         <!-- TabItem Header 样式 -->
@@ -191,16 +179,24 @@
                                             VerticalAlignment="Center"/>
                                 </Grid>
 
-                                <WrapPanel Margin="0,4,0,14">
-                                    <Button Tag="#6c5ce7" Click="PresetColor_Click" Style="{StaticResource ColorDot}"/>
-                                    <Button Tag="#ef4444" Click="PresetColor_Click" Style="{StaticResource ColorDot}"/>
-                                    <Button Tag="#10b981" Click="PresetColor_Click" Style="{StaticResource ColorDot}"/>
-                                    <Button Tag="#f59e0b" Click="PresetColor_Click" Style="{StaticResource ColorDot}"/>
-                                    <Button Tag="#3b82f6" Click="PresetColor_Click" Style="{StaticResource ColorDot}"/>
-                                    <Button Tag="#8b5cf6" Click="PresetColor_Click" Style="{StaticResource ColorDot}"/>
-                                    <Button Tag="#3498db" Click="PresetColor_Click" Style="{StaticResource ColorDot}"/>
-                                    <Button Tag="#ec4899" Click="PresetColor_Click" Style="{StaticResource ColorDot}"/>
-                                </WrapPanel>
+                            <WrapPanel Margin="0,4,0,14">
+                                <Button Width="30" Height="30" Margin="3" Tag="#6c5ce7" Click="PresetColor_Click" Cursor="Hand" Background="Transparent" BorderThickness="0" FocusVisualStyle="{x:Null}">
+                                    <Ellipse Width="24" Height="24" Fill="#6c5ce7"/></Button>
+                                <Button Width="30" Height="30" Margin="3" Tag="#ef4444" Click="PresetColor_Click" Cursor="Hand" Background="Transparent" BorderThickness="0" FocusVisualStyle="{x:Null}">
+                                    <Ellipse Width="24" Height="24" Fill="#ef4444"/></Button>
+                                <Button Width="30" Height="30" Margin="3" Tag="#10b981" Click="PresetColor_Click" Cursor="Hand" Background="Transparent" BorderThickness="0" FocusVisualStyle="{x:Null}">
+                                    <Ellipse Width="24" Height="24" Fill="#10b981"/></Button>
+                                <Button Width="30" Height="30" Margin="3" Tag="#f59e0b" Click="PresetColor_Click" Cursor="Hand" Background="Transparent" BorderThickness="0" FocusVisualStyle="{x:Null}">
+                                    <Ellipse Width="24" Height="24" Fill="#f59e0b"/></Button>
+                                <Button Width="30" Height="30" Margin="3" Tag="#3b82f6" Click="PresetColor_Click" Cursor="Hand" Background="Transparent" BorderThickness="0" FocusVisualStyle="{x:Null}">
+                                    <Ellipse Width="24" Height="24" Fill="#3b82f6"/></Button>
+                                <Button Width="30" Height="30" Margin="3" Tag="#8b5cf6" Click="PresetColor_Click" Cursor="Hand" Background="Transparent" BorderThickness="0" FocusVisualStyle="{x:Null}">
+                                    <Ellipse Width="24" Height="24" Fill="#8b5cf6"/></Button>
+                                <Button Width="30" Height="30" Margin="3" Tag="#3498db" Click="PresetColor_Click" Cursor="Hand" Background="Transparent" BorderThickness="0" FocusVisualStyle="{x:Null}">
+                                    <Ellipse Width="24" Height="24" Fill="#3498db"/></Button>
+                                <Button Width="30" Height="30" Margin="3" Tag="#ec4899" Click="PresetColor_Click" Cursor="Hand" Background="Transparent" BorderThickness="0" FocusVisualStyle="{x:Null}">
+                                    <Ellipse Width="24" Height="24" Fill="#ec4899"/></Button>
+                            </WrapPanel>
 
                                 <TextBlock Text="描述（可选）" FontSize="11" FontWeight="SemiBold"
                                            Foreground="{StaticResource TextSecondary}" Margin="0,0,0,4"/>
