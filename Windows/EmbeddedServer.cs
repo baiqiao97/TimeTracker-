@@ -107,7 +107,6 @@ namespace TimeTracker
                 return JsonSerializer.Serialize(new { error = "用户名和密码至少6位" }, _json);
 
             // 检查用户名是否已存在
-            var existing = _db!.GetTimeRecords(DateTime.MinValue, DateTime.MaxValue); // 借用查询
             var queryRow = QueryFirst("SELECT id FROM users WHERE username=@u", ("@u", username));
             if (queryRow != null)
                 return JsonSerializer.Serialize(new { error = "用户名已存在" }, _json);
@@ -246,7 +245,7 @@ namespace TimeTracker
 
         // ========================== DB 辅助 ==========================
 
-        private static string DbPath => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "timetracker.db");
+        private static string DbPath => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "time_tracker.db");
 
         private static int Exec(string sql, params (string, object?)[] prms)
         {

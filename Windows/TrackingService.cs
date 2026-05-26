@@ -7,6 +7,27 @@ namespace TimeTracker
 {
     public class TrackingService
     {
+        // 空闲检测 P/Invoke
+        [StructLayout(LayoutKind.Sequential)]
+        private struct LASTINPUTINFO
+        {
+            public uint cbSize;
+            public uint dwTime;
+        }
+
+        [DllImport("user32.dll")]
+        private static extern bool GetLastInputInfo(ref LASTINPUTINFO plii);
+
+        private static uint GetIdleSeconds()
+        {
+            var info = new LASTINPUTINFO { cbSize = (uint)Marshal.SizeOf<LASTINPUTINFO>() };
+            GetLastInputInfo(ref info);
+            return (uint)Environment.TickCount - info.dwTime / 1000;
+        }
+
+        private const int IdleThresholdSeconds = 300; // 5分钟无操作自动暂停
+        private DateTime _idlePauseSince;
+        private bool _idlePaused;
         private readonly CancellationTokenSource _cancellationTokenSource;
         private readonly Task _trackingTask;
         private string _currentProcessName = string.Empty;
@@ -21,7 +42,7 @@ namespace TimeTracker
         private volatile bool _isPaused;
         private readonly int _pollingIntervalMs;
 
-        public bool IsPaused => _isPaused;
+        public bool IsPaused => _isPaused || _idlePaused;
         public event Action<string>? StatusUpdated;
         public event Action<bool>? PauseStateChanged;
 
@@ -59,6 +80,7 @@ namespace TimeTracker
         {
             if (_isPaused) return;
             _isPaused = true;
+            _idlePaused = false; // 手动暂停时清除空闲状态
             FlushPendingWrites();
             PauseStateChanged?.Invoke(true);
             StatusUpdated?.Invoke("追踪已暂停");
@@ -66,8 +88,9 @@ namespace TimeTracker
 
         public void Resume()
         {
-            if (!_isPaused) return;
+            if (!_isPaused && !_idlePaused) return;
             _isPaused = false;
+            _idlePaused = false;
             _lastActivityTime = DateTime.Now;
             _currentProcessName = string.Empty;
             _currentWindowTitle = string.Empty;
@@ -150,7 +173,26 @@ namespace TimeTracker
             string lastWindowTitle = string.Empty;
             while (!cancellationToken.IsCancellationRequested)
             {
-                if (!_isPaused)
+                // 空闲检测：5分钟无操作自动暂停，恢复操作自动恢复
+                if (!_isPaused || _idlePaused)
+                {
+                    var idleSec = GetIdleSeconds();
+                    if (idleSec >= IdleThresholdSeconds && !_idlePaused)
+                    {
+                        _idlePaused = true;
+                        _idlePauseSince = DateTime.Now;
+                        StatusUpdated?.Invoke("空闲暂停 (5分钟无操作)");
+                        PauseStateChanged?.Invoke(true);
+                    }
+                    else if (idleSec < IdleThresholdSeconds && _idlePaused)
+                    {
+                        _idlePaused = false;
+                        StatusUpdated?.Invoke("追踪已恢复");
+                        PauseStateChanged?.Invoke(false);
+                    }
+                }
+
+                if (!_isPaused && !_idlePaused)
                 {
                     try
                     {

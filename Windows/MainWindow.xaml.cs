@@ -579,12 +579,8 @@ namespace TimeTracker
 
         private SolidColorBrush GetCatColorBrush(string? categoryName)
         {
-            if (string.IsNullOrEmpty(categoryName)) return Brushes.Gray;
-            var cats = _databaseManager.GetCategories();
-            var cat = cats.FirstOrDefault(c => c.Name == categoryName);
-            if (cat == null) return Brushes.Gray;
-            try { return (SolidColorBrush)new BrushConverter().ConvertFrom(cat.Color!)!; }
-            catch { return Brushes.Gray; }
+            if (_colorCache.Count == 0) RefreshColorCache();
+            return GetCatColor(categoryName);
         }
 
         private void SetupColumns(string h1, string b1, string h2, string b2, string? h3, string? b3)
@@ -894,7 +890,7 @@ namespace TimeTracker
             var dialog = new Microsoft.Win32.SaveFileDialog
             {
                 Title = "导出追踪数据",
-                Filter = "JSON 文件|*.json",
+                Filter = "JSON 文件|*.json|CSV 文件|*.csv",
                 FileName = $"TimeTracker_{DateTime.Now:yyyyMMdd}.json",
                 InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)
             };
@@ -1198,8 +1194,10 @@ namespace TimeTracker
             pieChartCanvas.Opacity = 0;
 
             var (start, end) = GetDateRange();
-            var procStats = await Task.Run(() => _databaseManager.GetTopProcesses(start, end));
-            var catStats = await Task.Run(() => _databaseManager.GetStatsByCategory(start, end));
+            var procTask = Task.Run(() => _databaseManager.GetTopProcesses(start, end));
+            var catTask = Task.Run(() => _databaseManager.GetStatsByCategory(start, end));
+            var procStats = await procTask;
+            var catStats = await catTask;
 
             // 柱状图先画
             DrawBarChart(procStats.Take(10).ToList());

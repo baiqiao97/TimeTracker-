@@ -132,12 +132,16 @@ namespace TimeTracker
 
             var processes = _db.GetTopProcesses(DateTime.Now.AddDays(-30), DateTime.Now);
 
+            // 一次查询获取所有进程的分类映射，避免 N+1
+            var allRecords = _db.GetTimeRecords(DateTime.Now.AddDays(-30), DateTime.Now);
+            var categoryMap = allRecords
+                .GroupBy(r => r.ProcessName)
+                .ToDictionary(g => g.Key, g => g.OrderByDescending(r => r.Date).First().CategoryId);
+
             var items = new ObservableCollection<ProcessMapItem>();
             foreach (var p in processes)
             {
-                var latestRecord = _db.GetTimeRecords(DateTime.Now.AddDays(-30), DateTime.Now)
-                    .FirstOrDefault(r => r.ProcessName == p.ProcessName);
-                int? existingCatId = latestRecord?.CategoryId;
+                int? existingCatId = categoryMap.TryGetValue(p.ProcessName, out var cid) ? cid : null;
 
                 items.Add(new ProcessMapItem
                 {
