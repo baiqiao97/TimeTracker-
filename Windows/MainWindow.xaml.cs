@@ -627,12 +627,15 @@ namespace TimeTracker
                 closeBtn.MouseEnter += (_, _) => closeBtn.Foreground = Brushes.White;
                 closeBtn.MouseLeave += (_, _) => closeBtn.Foreground = new SolidColorBrush(Color.FromRgb(0xcc, 0xcc, 0xee));
 
-                var headerBar = new Grid { Height = 48, Background = accentPurple };
+                var headerBar = new Grid { Height = 48, Background = Brushes.Transparent };
                 headerBar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
                 headerBar.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
                 headerBar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
                 Grid.SetColumn(headerTitle, 0); Grid.SetColumn(closeBtn, 2);
                 headerBar.Children.Add(headerTitle); headerBar.Children.Add(closeBtn);
+
+                var headerBorder = new Border { CornerRadius = new CornerRadius(12, 12, 0, 0),
+                    Background = accentPurple, Child = headerBar };
 
                 // ===== 应用信息行 =====
                 var prefixDot = new Ellipse { Width = 10, Height = 10, Fill = item.CatColor,
@@ -745,15 +748,14 @@ namespace TimeTracker
                 var rootGrid = new Grid();
                 rootGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
                 rootGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-                Grid.SetRow(headerBar, 0); Grid.SetRow(contentBorder, 1);
-                rootGrid.Children.Add(headerBar); rootGrid.Children.Add(contentBorder);
+                Grid.SetRow(headerBorder, 0); Grid.SetRow(contentBorder, 1);
+                rootGrid.Children.Add(headerBorder); rootGrid.Children.Add(contentBorder);
 
                 var outerBorder = new Border
                 {
                     CornerRadius = new CornerRadius(12), Background = Brushes.White,
                     Effect = new System.Windows.Media.Effects.DropShadowEffect { BlurRadius = 24, ShadowDepth = 2, Opacity = 0.2, Color = Colors.Black },
-                    Child = rootGrid,
-                    ClipToBounds = true
+                    Child = rootGrid
                 };
 
                 var scaleTransform = new ScaleTransform(0.85, 0.85);
@@ -848,10 +850,9 @@ namespace TimeTracker
                     if (ev.ButtonState == System.Windows.Input.MouseButtonState.Pressed)
                         popup.DragMove();
                 };
-                headerBar.MouseLeftButtonDown += (_, ev) =>
+                headerBorder.MouseLeftButtonDown += (_, ev) =>
                 {
-                    if (ev.ButtonState == System.Windows.Input.MouseButtonState.Pressed
-                        && ev.OriginalSource == headerBar)
+                    if (ev.ButtonState == System.Windows.Input.MouseButtonState.Pressed)
                         popup.DragMove();
                 };
 
