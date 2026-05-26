@@ -76,20 +76,20 @@ namespace TimeTracker
 
         // ======================== CUSTOM SUCCESS TOAST ========================
         /// <summary>
-        /// 显示自定义成功通知弹窗（非系统 MessageBox）
-        /// </summary>
-        public static async void ShowSuccessNotification(string title, string message)
+        public static async void ShowNotification(string title, string message, bool isSuccess = true)
         {
             try
             {
             var accentGreen = new SolidColorBrush(Color.FromRgb(0x10, 0xb9, 0x81));
+            var accentRed = new SolidColorBrush(Color.FromRgb(0xef, 0x44, 0x44));
+            var accent = isSuccess ? accentGreen : accentRed;
+            var iconText = isSuccess ? "✓" : "✕";
             var textDark = new SolidColorBrush(Color.FromRgb(0x1a, 0x1d, 0x2e));
             var textGray = new SolidColorBrush(Color.FromRgb(0x6b, 0x72, 0x80));
 
-            // 图标
             var icon = new TextBlock
             {
-                Text = "✓",
+                Text = iconText,
                 FontSize = 28,
                 FontWeight = FontWeights.Bold,
                 Foreground = Brushes.White,
@@ -100,7 +100,7 @@ namespace TimeTracker
             {
                 Width = 48, Height = 48,
                 CornerRadius = new CornerRadius(24),
-                Background = accentGreen,
+                Background = accent,
                 Child = icon,
                 Margin = new Thickness(0, 0, 0, 12)
             };
@@ -944,7 +944,7 @@ namespace TimeTracker
                         dataGrid.Items.Refresh();
 
                         await AnimatedClose();
-                        ShowSuccessNotification("标签已分配",
+                        ShowNotification("标签已分配",
                             $"已更新 {updated} 条记录\n\"{displayName}\" → {item.Category}");
                     }
                     else
@@ -974,9 +974,9 @@ namespace TimeTracker
             var (ok, count, error) = await Task.Run(
                 () => DataSyncUtils.ExportData(_databaseManager, dialog.FileName));
             if (ok)
-                ShowSuccessNotification("导出成功", $"已导出 {count} 条记录\n{dialog.FileName}");
+                ShowNotification("导出成功", $"已导出 {count} 条记录\n{dialog.FileName}");
             else
-                ShowSuccessNotification("导出失败", error ?? "未知错误");
+                ShowNotification("导出失败", error ?? "未知错误", false);
             lblCurrentApp.Text = ok ? "导出完成" : "导出失败";
         }
 
@@ -995,13 +995,13 @@ namespace TimeTracker
                 () => DataSyncUtils.ImportData(_databaseManager, dialog.FileName));
             if (ok)
             {
-                ShowSuccessNotification("导入成功",
+                ShowNotification("导入成功",
                     $"新增 {newCount} 条，跳过 {skipped} 条重复记录");
                 LoadStats();
             }
             else
             {
-                ShowSuccessNotification("导入失败", error ?? "未知错误");
+                ShowNotification("导入失败", error ?? "未知错误", false);
             }
             lblCurrentApp.Text = ok ? "导入完成" : "导入失败";
         }
@@ -1013,12 +1013,12 @@ namespace TimeTracker
                 () => DataSyncUtils.SyncData(_databaseManager));
             if (ok)
             {
-                ShowSuccessNotification("同步完成", "数据已导出并合并到本地");
+                ShowNotification("同步完成", "数据已导出并合并到本地");
                 LoadStats();
             }
             else
             {
-                ShowSuccessNotification("同步失败", error ?? "未知错误");
+                ShowNotification("同步失败", error ?? "未知错误", false);
             }
             lblCurrentApp.Text = ok ? "同步完成" : "同步失败";
         }
