@@ -752,7 +752,8 @@ namespace TimeTracker
                 {
                     CornerRadius = new CornerRadius(12), Background = Brushes.White,
                     Effect = new System.Windows.Media.Effects.DropShadowEffect { BlurRadius = 24, ShadowDepth = 2, Opacity = 0.2, Color = Colors.Black },
-                    Child = rootGrid
+                    Child = rootGrid,
+                    ClipToBounds = true
                 };
 
                 var scaleTransform = new ScaleTransform(0.85, 0.85);
