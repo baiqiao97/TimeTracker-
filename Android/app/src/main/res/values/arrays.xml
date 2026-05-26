@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="todo_priorities">
+        <item>🔴 高</item>
+        <item>🟡 中</item>
+        <item>🟢 低</item>
+    </string-array>
+    <string-array name="schedule_colors">
+        <item>紫色</item>
+        <item>绿色</item>
+        <item>橙色</item>
+        <item>红色</item>
+        <item>蓝色</item>
+    </string-array>
+</resources>

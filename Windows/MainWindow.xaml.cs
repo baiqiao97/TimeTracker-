@@ -13,6 +13,7 @@ namespace TimeTracker
         private TrackingService? _trackingService;
         private readonly DatabaseManager _databaseManager;
         private string _currentRange = "daily";
+        private string _todoFilter = "all";
 
         public MainWindow()
         {
@@ -300,11 +301,33 @@ namespace TimeTracker
             }
         }
 
+        private static string DeviceId => Environment.MachineName + "-" + Environment.OSVersion.Version;
+
+        private void ShowMainPanels()
+        {
+            statsPanel.Visibility = Visibility.Visible;
+            actionPanel.Visibility = Visibility.Visible;
+            contentBorder.Visibility = Visibility.Visible;
+            todoPanel.Visibility = Visibility.Collapsed;
+            schedulePanel.Visibility = Visibility.Collapsed;
+        }
+
+        private void SwitchToPanel(Grid panel)
+        {
+            statsPanel.Visibility = Visibility.Collapsed;
+            actionPanel.Visibility = Visibility.Collapsed;
+            contentBorder.Visibility = Visibility.Collapsed;
+            todoPanel.Visibility = Visibility.Collapsed;
+            schedulePanel.Visibility = Visibility.Collapsed;
+            panel.Visibility = Visibility.Visible;
+        }
+
         private void NavOverview_Click(object sender, RoutedEventArgs e)
         {
             _currentRange = "daily";
             SetPage("概览", "今日应用使用总览");
             HighlightNav(btnOverview);
+            ShowMainPanels();
             LoadStats();
             RefreshChartIfVisible();
         }
@@ -314,6 +337,7 @@ namespace TimeTracker
             _currentRange = "daily";
             SetPage("每日统计", "今日各应用使用详情");
             HighlightNav(btnDaily);
+            ShowMainPanels();
             LoadStats();
             ShowProcessStats();
             RefreshChartIfVisible();
@@ -324,6 +348,7 @@ namespace TimeTracker
             _currentRange = "weekly";
             SetPage("每周统计", "近7天各应用使用详情");
             HighlightNav(btnWeekly);
+            ShowMainPanels();
             LoadStats();
             ShowProcessStats();
             RefreshChartIfVisible();
@@ -334,6 +359,7 @@ namespace TimeTracker
             _currentRange = "weekly";
             SetPage("分类统计", "按标签分类的使用时长");
             HighlightNav(btnCategory);
+            ShowMainPanels();
             LoadStats();
             ShowCategoryStats();
             RefreshChartIfVisible();
@@ -344,9 +370,26 @@ namespace TimeTracker
             _currentRange = "weekly";
             SetPage("活动统计", "按活动分类查看使用时长");
             HighlightNav(btnActivity);
+            ShowMainPanels();
             LoadStats();
             ShowActivityStats();
             RefreshChartIfVisible();
+        }
+
+        private void NavTodoList_Click(object sender, RoutedEventArgs e)
+        {
+            SetPage("待办清单", "管理你的待办事项");
+            HighlightNav(btnTodoList);
+            SwitchToPanel(todoPanel);
+            LoadTodoItems();
+        }
+
+        private void NavSchedule_Click(object sender, RoutedEventArgs e)
+        {
+            SetPage("日程安排", "管理你的日程计划");
+            HighlightNav(btnSchedule);
+            SwitchToPanel(schedulePanel);
+            LoadSchedules();
         }
 
         private void NavImport_Click(object sender, RoutedEventArgs e) => DoImport();
@@ -1550,6 +1593,318 @@ namespace TimeTracker
             if (ts.TotalHours >= 1) return $"{(int)ts.TotalHours}h {ts.Minutes}m";
             if (ts.TotalMinutes >= 1) return $"{ts.Minutes}m {ts.Seconds}s";
             return $"{ts.Seconds}s";
+        }
+
+        // ======================== TODO LIST ========================
+
+        private void TodoAdd_Click(object sender, RoutedEventArgs e)
+        {
+            var title = txtTodoTitle.Text.Trim();
+            if (string.IsNullOrEmpty(title)) return;
+
+            var priority = cmbTodoPriority.SelectedIndex switch { 0 => 2, 2 => 0, _ => 1 };
+
+            _databaseManager.InsertTodo(title, "", priority, null, DeviceId);
+            txtTodoTitle.Clear();
+            LoadTodoItems();
+        }
+
+        private void TodoFilterAll_Click(object sender, RoutedEventArgs e)
+        {
+            _todoFilter = "all";
+            LoadTodoItems();
+        }
+
+        private void TodoFilterPending_Click(object sender, RoutedEventArgs e)
+        {
+            _todoFilter = "pending";
+            LoadTodoItems();
+        }
+
+        private void TodoFilterDone_Click(object sender, RoutedEventArgs e)
+        {
+            _todoFilter = "done";
+            LoadTodoItems();
+        }
+
+        private void ToggleTodo(int id, bool completed)
+        {
+            _databaseManager.ToggleTodo(id, completed);
+            LoadTodoItems();
+        }
+
+        private void LoadTodoItems()
+        {
+            todoItemsControl.Items.Clear();
+
+            List<TodoItemData> items;
+            if (_todoFilter == "pending")
+                items = _databaseManager.GetTodos(false);
+            else if (_todoFilter == "done")
+                items = _databaseManager.GetTodos(true).Where(t => t.IsCompleted).ToList();
+            else
+                items = _databaseManager.GetTodos(true);
+
+            foreach (var item in items)
+            {
+                var checkBox = new CheckBox
+                {
+                    IsChecked = item.IsCompleted,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Margin = new Thickness(0, 0, 12, 0)
+                };
+                var itemId = item.Id;
+                checkBox.Click += (s, ev) => ToggleTodo(itemId, checkBox.IsChecked == true);
+
+                var titleBlock = new TextBlock
+                {
+                    Text = item.Title,
+                    FontSize = 14,
+                    FontWeight = item.IsCompleted ? FontWeights.Normal : FontWeights.Bold,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    TextWrapping = TextWrapping.Wrap,
+                    Width = 280
+                };
+                if (item.IsCompleted)
+                {
+                    titleBlock.TextDecorations = TextDecorations.Strikethrough;
+                    titleBlock.Foreground = new SolidColorBrush(Color.FromRgb(0x9c, 0xa3, 0xaf));
+                }
+
+                var priorityText = item.Priority switch { 2 => "🔴 高", 0 => "🟢 低", _ => "🟡 中" };
+                var priorityBadge = new TextBlock
+                {
+                    Text = priorityText,
+                    FontSize = 12,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Margin = new Thickness(12, 0, 0, 0)
+                };
+
+                var dueText = !string.IsNullOrEmpty(item.DueDate) ? $"📅 {item.DueDate}" : "";
+                var dueBlock = new TextBlock
+                {
+                    Text = dueText,
+                    FontSize = 12,
+                    Foreground = new SolidColorBrush(Color.FromRgb(0x6b, 0x72, 0x80)),
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Margin = new Thickness(12, 0, 0, 0)
+                };
+
+                var delId = item.Id;
+                var deleteBtn = new Button
+                {
+                    Content = "删除",
+                    Background = new SolidColorBrush(Color.FromRgb(0xfe, 0xf2, 0xf2)),
+                    Foreground = new SolidColorBrush(Color.FromRgb(0xef, 0x44, 0x44)),
+                    FontSize = 11,
+                    Height = 28,
+                    Padding = new Thickness(12, 0, 12, 0),
+                    BorderThickness = new Thickness(0),
+                    Cursor = Cursors.Hand,
+                    Margin = new Thickness(16, 0, 0, 0)
+                };
+                var dtpl = new ControlTemplate(typeof(Button));
+                var dfef = new FrameworkElementFactory(typeof(Border));
+                dfef.SetValue(Border.BackgroundProperty, new TemplateBindingExtension(Button.BackgroundProperty));
+                dfef.SetValue(Border.CornerRadiusProperty, new CornerRadius(6));
+                var dcp = new FrameworkElementFactory(typeof(ContentPresenter));
+                dcp.SetValue(ContentPresenter.HorizontalAlignmentProperty, HorizontalAlignment.Center);
+                dcp.SetValue(ContentPresenter.VerticalAlignmentProperty, VerticalAlignment.Center);
+                dfef.AppendChild(dcp);
+                dtpl.VisualTree = dfef;
+                deleteBtn.Template = dtpl;
+                deleteBtn.Click += (s, ev) => { _databaseManager.DeleteTodo(delId); LoadTodoItems(); };
+
+                var row = new StackPanel { Orientation = Orientation.Horizontal };
+                row.Children.Add(checkBox);
+                row.Children.Add(titleBlock);
+                row.Children.Add(priorityBadge);
+                row.Children.Add(dueBlock);
+                row.Children.Add(deleteBtn);
+
+                var border = new Border
+                {
+                    CornerRadius = new CornerRadius(8),
+                    Padding = new Thickness(16, 10, 16, 10),
+                    Margin = new Thickness(0, 0, 0, 6),
+                    Background = Brushes.White,
+                    Child = row
+                };
+
+                todoItemsControl.Items.Add(border);
+            }
+        }
+
+        // ======================== SCHEDULE ========================
+
+        private void ScheduleAdd_Click(object sender, RoutedEventArgs e)
+        {
+            var title = txtScheduleTitle.Text.Trim();
+            if (string.IsNullOrEmpty(title)) return;
+
+            var date = dpScheduleDate.SelectedDate ?? DateTime.Today;
+            var isAllDay = chkAllDay.IsChecked == true;
+
+            string startTime;
+            string? endTime = null;
+
+            if (isAllDay)
+            {
+                startTime = date.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
+                endTime = date.AddDays(1).ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
+            }
+            else
+            {
+                var timeInput = txtScheduleTime.Text.Trim();
+                var parts = timeInput.Split('-');
+                if (parts.Length == 2)
+                {
+                    var startStr = parts[0].Trim();
+                    var endStr = parts[1].Trim();
+                    if (TimeSpan.TryParse(startStr, out var startTs) && TimeSpan.TryParse(endStr, out var endTs))
+                    {
+                        var startDt = date + startTs;
+                        var endDt = date + endTs;
+                        startTime = startDt.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
+                        endTime = endDt.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
+                    }
+                    else
+                    {
+                        startTime = date.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
+                    }
+                }
+                else
+                {
+                    startTime = date.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
+                }
+            }
+
+            var selectedColor = cmbScheduleColor.SelectedItem is ComboBoxItem cbi
+                ? cbi.Content?.ToString() ?? "#6c5ce7"
+                : "#6c5ce7";
+
+            _databaseManager.InsertSchedule(title, "", startTime, endTime, isAllDay, selectedColor, DeviceId);
+            txtScheduleTitle.Clear();
+            txtScheduleTime.Text = "08:00 - 10:00";
+            dpScheduleDate.SelectedDate = null;
+            chkAllDay.IsChecked = false;
+            cmbScheduleColor.SelectedIndex = 0;
+            LoadSchedules();
+        }
+
+        private void LoadSchedules()
+        {
+            scheduleItemsControl.Items.Clear();
+            var schedules = _databaseManager.GetSchedules();
+
+            foreach (var item in schedules)
+            {
+                var colorBrush = ParseColorBrush(item.Color);
+
+                var titleBlock = new TextBlock
+                {
+                    Text = item.Title,
+                    FontSize = 14,
+                    FontWeight = FontWeights.Bold,
+                    Margin = new Thickness(0, 0, 0, 4)
+                };
+
+                string timeText;
+                try
+                {
+                    var startDt = DateTime.Parse(item.StartTime, CultureInfo.InvariantCulture);
+                    if (item.IsAllDay)
+                        timeText = $"📅 {startDt:yyyy-MM-dd} 全天";
+                    else if (!string.IsNullOrEmpty(item.EndTime))
+                    {
+                        var endDt = DateTime.Parse(item.EndTime, CultureInfo.InvariantCulture);
+                        timeText = $"📅 {startDt:yyyy-MM-dd}  {startDt:HH:mm} - {endDt:HH:mm}";
+                    }
+                    else
+                        timeText = $"📅 {startDt:yyyy-MM-dd}  {startDt:HH:mm}";
+                }
+                catch
+                {
+                    timeText = item.StartTime;
+                }
+
+                var descText = !string.IsNullOrEmpty(item.Description) ? $" | {item.Description}" : "";
+                var detailBlock = new TextBlock
+                {
+                    Text = timeText + descText,
+                    FontSize = 12,
+                    Foreground = new SolidColorBrush(Color.FromRgb(0x6b, 0x72, 0x80))
+                };
+
+                var delId = item.Id;
+                var deleteBtn = new Button
+                {
+                    Content = "删除",
+                    Background = new SolidColorBrush(Color.FromRgb(0xfe, 0xf2, 0xf2)),
+                    Foreground = new SolidColorBrush(Color.FromRgb(0xef, 0x44, 0x44)),
+                    FontSize = 11,
+                    Height = 28,
+                    Padding = new Thickness(12, 0, 12, 0),
+                    BorderThickness = new Thickness(0),
+                    Cursor = Cursors.Hand
+                };
+                var stpl = new ControlTemplate(typeof(Button));
+                var sfef = new FrameworkElementFactory(typeof(Border));
+                sfef.SetValue(Border.BackgroundProperty, new TemplateBindingExtension(Button.BackgroundProperty));
+                sfef.SetValue(Border.CornerRadiusProperty, new CornerRadius(6));
+                var scp = new FrameworkElementFactory(typeof(ContentPresenter));
+                scp.SetValue(ContentPresenter.HorizontalAlignmentProperty, HorizontalAlignment.Center);
+                scp.SetValue(ContentPresenter.VerticalAlignmentProperty, VerticalAlignment.Center);
+                sfef.AppendChild(scp);
+                stpl.VisualTree = sfef;
+                deleteBtn.Template = stpl;
+                deleteBtn.Click += (s, ev) => { _databaseManager.DeleteSchedule(delId); LoadSchedules(); };
+
+                var textStack = new StackPanel();
+                textStack.Children.Add(titleBlock);
+                textStack.Children.Add(detailBlock);
+
+                var row = new Grid();
+                row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+                Grid.SetColumn(textStack, 0);
+                Grid.SetColumn(deleteBtn, 1);
+                row.Children.Add(textStack);
+                row.Children.Add(deleteBtn);
+
+                var colorBar = new Border
+                {
+                    Width = 4,
+                    Background = colorBrush,
+                    CornerRadius = new CornerRadius(2, 0, 0, 2)
+                };
+
+                var outerRow = new Grid();
+                outerRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+                outerRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                Grid.SetColumn(colorBar, 0);
+                Grid.SetColumn(row, 1);
+                row.Margin = new Thickness(12, 0, 0, 0);
+                outerRow.Children.Add(colorBar);
+                outerRow.Children.Add(row);
+
+                var border = new Border
+                {
+                    CornerRadius = new CornerRadius(8),
+                    Padding = new Thickness(0, 10, 16, 10),
+                    Margin = new Thickness(0, 0, 0, 6),
+                    Background = Brushes.White,
+                    Child = outerRow
+                };
+
+                scheduleItemsControl.Items.Add(border);
+            }
+        }
+
+        private static SolidColorBrush ParseColorBrush(string hex)
+        {
+            try { return (SolidColorBrush)new BrushConverter().ConvertFrom(hex)!; }
+            catch { return new SolidColorBrush(Color.FromRgb(0x6c, 0x5c, 0xe7)); }
         }
 
         // ======================== WINDOW DRAG (borderless) ========================

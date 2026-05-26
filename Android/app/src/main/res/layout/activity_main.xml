@@ -185,19 +185,29 @@
         android:gravity="center"
         android:paddingHorizontal="8dp">
 
+        <Button android:id="@+id/btn_todo"
+            android:layout_width="0dp" android:layout_height="44dp" android:layout_weight="1"
+            android:text="📋 待办" android:textSize="11sp" android:textColor="#6c5ce7"
+            android:background="#f4f4fa" android:layout_marginEnd="4dp"/>
+
+        <Button android:id="@+id/btn_schedule"
+            android:layout_width="0dp" android:layout_height="44dp" android:layout_weight="1"
+            android:text="📅 日程" android:textSize="11sp" android:textColor="#8b5cf6"
+            android:background="#f5f0ff" android:layout_marginEnd="4dp"/>
+
         <Button android:id="@+id/btn_chart"
             android:layout_width="0dp" android:layout_height="44dp" android:layout_weight="1"
-            android:text="📊 图表" android:textSize="12sp" android:textColor="#6c5ce7"
-            android:background="#f4f4fa" android:layout_marginEnd="6dp"/>
+            android:text="📊 图表" android:textSize="11sp" android:textColor="#6c5ce7"
+            android:background="#f4f4fa" android:layout_marginEnd="4dp"/>
 
         <Button android:id="@+id/btn_categories"
             android:layout_width="0dp" android:layout_height="44dp" android:layout_weight="1"
-            android:text="🏷 标签" android:textSize="12sp" android:textColor="#10b981"
-            android:background="#ecfdf5" android:layout_marginEnd="6dp"/>
+            android:text="🏷 标签" android:textSize="11sp" android:textColor="#10b981"
+            android:background="#ecfdf5" android:layout_marginEnd="4dp"/>
 
         <Button android:id="@+id/btn_pause"
             android:layout_width="0dp" android:layout_height="44dp" android:layout_weight="1"
-            android:text="⏸ 暂停" android:textSize="12sp" android:textColor="#f59e0b"
+            android:text="⏸ 暂停" android:textSize="11sp" android:textColor="#f59e0b"
             android:background="#fffbeb"/>
     </LinearLayout>
 

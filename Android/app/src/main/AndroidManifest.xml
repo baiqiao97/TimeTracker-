@@ -49,6 +49,14 @@
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
+        <activity
+            android:name=".TodoActivity"
+            android:label="待办清单"
+            android:parentActivityName=".MainActivity"/>
+        <activity
+            android:name=".ScheduleActivity"
+            android:label="日程安排"
+            android:parentActivityName=".MainActivity"/>
     </application>
 
 </manifest>

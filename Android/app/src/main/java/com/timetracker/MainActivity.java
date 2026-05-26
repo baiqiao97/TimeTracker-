@@ -65,6 +65,8 @@ public class MainActivity extends AppCompatActivity {
         btnWeekly = findViewById(R.id.btn_weekly);
         btnMonthly = findViewById(R.id.btn_monthly);
         btnPause = findViewById(R.id.btn_pause);
+        Button btnTodo = findViewById(R.id.btn_todo);
+        Button btnSchedule = findViewById(R.id.btn_schedule);
         Button btnChart = findViewById(R.id.btn_chart);
         Button btnCategories = findViewById(R.id.btn_categories);
         Button btnSettings = findViewById(R.id.btn_settings);
@@ -102,6 +104,14 @@ public class MainActivity extends AppCompatActivity {
             } else {
                 startService(intent);
             }
+        });
+
+        btnTodo.setOnClickListener(v -> {
+            startActivity(new Intent(this, TodoActivity.class));
+        });
+
+        btnSchedule.setOnClickListener(v -> {
+            startActivity(new Intent(this, ScheduleActivity.class));
         });
 
         btnChart.setOnClickListener(v -> {

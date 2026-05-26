@@ -256,6 +256,7 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
@@ -279,8 +280,16 @@
                         <Button x:Name="btnActivity" Content="🎯  活动统计" Style="{StaticResource SidebarBtn}" Click="NavActivity_Click" Visibility="Collapsed"/>
                     </StackPanel>
 
+                    <!-- Section: 工具 -->
+                    <StackPanel x:Name="panelTools" Grid.Row="2" Margin="0,16,0,0">
+                        <TextBlock Text="效率工具" FontSize="10" FontWeight="SemiBold"
+                                   Foreground="#64748b" Margin="24,0,0,6" TextOptions.TextFormattingMode="Display"/>
+                        <Button x:Name="btnTodoList" Content="✅ 待办清单" Style="{StaticResource SidebarBtn}" Click="NavTodoList_Click"/>
+                        <Button x:Name="btnSchedule" Content="📅 日程安排" Style="{StaticResource SidebarBtn}" Click="NavSchedule_Click"/>
+                    </StackPanel>
+
                     <!-- Section: 数据 (标准模式) -->
-                    <StackPanel x:Name="panelStandard" Grid.Row="2" Margin="0,16,0,0">
+                    <StackPanel x:Name="panelStandard" Grid.Row="3" Margin="0,16,0,0">
                         <TextBlock Text="数据管理" FontSize="10" FontWeight="SemiBold"
                                    Foreground="#64748b" Margin="24,0,0,6" TextOptions.TextFormattingMode="Display"/>
                         <Button Content="📥  导入" Style="{StaticResource SidebarBtn}" Click="NavImport_Click"/>
@@ -290,7 +299,7 @@
                     </StackPanel>
 
                     <!-- Section: 数据 (活动模式) -->
-                    <StackPanel x:Name="panelActivity" Grid.Row="2" Margin="0,16,0,0" Visibility="Collapsed">
+                    <StackPanel x:Name="panelActivity" Grid.Row="3" Margin="0,16,0,0" Visibility="Collapsed">
                         <TextBlock Text="活动管理" FontSize="10" FontWeight="SemiBold"
                                    Foreground="#64748b" Margin="24,0,0,6" TextOptions.TextFormattingMode="Display"/>
                         <Button Content="📥  导入" Style="{StaticResource SidebarBtn}" Click="NavImport_Click"/>
@@ -301,7 +310,7 @@
                     </StackPanel>
 
                     <!-- Bottom -->
-                    <StackPanel Grid.Row="3" Margin="0,0,0,20">
+                    <StackPanel Grid.Row="4" Margin="0,0,0,20">
                         <Button Content="⚙  设置" Style="{StaticResource SidebarBtn}" Click="NavSettings_Click"/>
                     </StackPanel>
                 </Grid>
@@ -447,7 +456,7 @@
                         </StackPanel>
 
                         <!-- Data Table Card -->
-                        <Border Grid.Row="2" Background="{StaticResource CardBg}" CornerRadius="16" Padding="6"
+                        <Border x:Name="contentBorder" Grid.Row="2" Background="{StaticResource CardBg}" CornerRadius="16" Padding="6"
                                 Effect="{StaticResource CardShadow}">
                             <ScrollViewer VerticalScrollBarVisibility="Auto"
                                           PanningMode="VerticalOnly" CanContentScroll="False">
@@ -506,7 +515,71 @@
                     </StackPanel>
                 </ScrollViewer>
             </Border>
-        </Grid>
+
+                    <!-- TodoList Panel -->
+                    <Grid x:Name="todoPanel" Grid.Row="0" Grid.RowSpan="3" Visibility="Collapsed">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,12">
+                            <TextBox x:Name="txtTodoTitle" Width="280" Height="38" FontSize="13"
+                                     VerticalContentAlignment="Center" Padding="12,0"
+                                     BorderBrush="#e5e7eb" BorderThickness="1"
+                                     ToolTip="输入新待办事项" Margin="0,0,8,0"/>
+                            <ComboBox x:Name="cmbTodoPriority" Width="80" Height="38" Margin="0,0,8,0"
+                                      SelectedIndex="1">
+                                <ComboBoxItem Content="🔴 高"/>
+                                <ComboBoxItem Content="🟡 中"/>
+                                <ComboBoxItem Content="🟢 低"/>
+                            </ComboBox>
+                            <Button Content="添加" Style="{StaticResource PrimaryBtn}" Click="TodoAdd_Click"/>
+                        </StackPanel>
+                        <WrapPanel Grid.Row="1" Orientation="Horizontal" Margin="0,8,0,12">
+                            <Button x:Name="btnTodoFilterAll" Content="全部" Style="{StaticResource TagBtn}" Margin="0,0,6,0" Click="TodoFilterAll_Click"/>
+                            <Button x:Name="btnTodoFilterPending" Content="进行中" Style="{StaticResource TagBtn}" Margin="0,0,6,0" Click="TodoFilterPending_Click"/>
+                            <Button x:Name="btnTodoFilterDone" Content="已完成" Style="{StaticResource TagBtn}" Click="TodoFilterDone_Click"/>
+                        </WrapPanel>
+                        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                            <ItemsControl x:Name="todoItemsControl"/>
+                        </ScrollViewer>
+                    </Grid>
+
+                    <!-- Schedule Panel -->
+                    <Grid x:Name="schedulePanel" Grid.Row="0" Grid.RowSpan="3" Visibility="Collapsed">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,12">
+                            <TextBox x:Name="txtScheduleTitle" Width="200" Height="38" FontSize="13"
+                                     VerticalContentAlignment="Center" Padding="12,0"
+                                     BorderBrush="#e5e7eb" BorderThickness="1"
+                                     Margin="0,0,8,0" ToolTip="日程标题"/>
+                            <DatePicker x:Name="dpScheduleDate" Width="140" Height="38"
+                                        VerticalContentAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBox x:Name="txtScheduleTime" Width="190" Height="38" FontSize="12"
+                                     VerticalContentAlignment="Center" Padding="8,0"
+                                     BorderBrush="#e5e7eb" BorderThickness="1"
+                                     Margin="0,0,8,0" Text="08:00 - 10:00" ToolTip="开始-结束时间"/>
+                            <CheckBox x:Name="chkAllDay" Content="全天" VerticalAlignment="Center" FontSize="12"
+                                      Margin="0,0,8,0"/>
+                            <ComboBox x:Name="cmbScheduleColor" Width="70" Height="38" Margin="0,0,8,0"
+                                      SelectedIndex="0">
+                                <ComboBoxItem Content="#6c5ce7"/>
+                                <ComboBoxItem Content="#10b981"/>
+                                <ComboBoxItem Content="#f59e0b"/>
+                                <ComboBoxItem Content="#ef4444"/>
+                                <ComboBoxItem Content="#3b82f6"/>
+                            </ComboBox>
+                            <Button Content="添加" Style="{StaticResource PrimaryBtn}" Click="ScheduleAdd_Click"/>
+                        </StackPanel>
+                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                            <ItemsControl x:Name="scheduleItemsControl"/>
+                        </ScrollViewer>
+                    </Grid>
+                </Grid>
         </Grid>
         </Grid>
     </Border>

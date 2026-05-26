@@ -130,7 +130,69 @@ app.MapPost("/api/sync/upload", (HttpRequest req, List<RecordDto> records) =>
     return Results.Ok(new { count });
 });
 
-app.MapGet("/", () => Results.Ok(new { service = "TimeTracker Cloud", version = "2.0" }));
+app.MapPost("/api/sync/todos/upload", (HttpRequest req, List<TodoDto> todos) =>
+{
+    var auth = GetAuth(dbPath, req);
+    if (auth == null) return Results.Unauthorized();
+    int count = 0;
+    foreach (var t in todos)
+    {
+        Exec(dbPath,
+            @"INSERT OR IGNORE INTO todo_items(id,title,description,is_completed,priority,due_date,created_at,completed_at,device_id,user_id)
+              VALUES(@id,@ti,@d,@ic,@p,@dd,@ca,@co,@di,@uid)",
+            ("@id", t.Id), ("@ti", t.Title), ("@d", t.Description),
+            ("@ic", t.IsCompleted ? 1 : 0), ("@p", t.Priority),
+            ("@dd", t.DueDate), ("@ca", t.CreatedAt), ("@co", t.CompletedAt),
+            ("@di", t.DeviceId), ("@uid", auth.Value.userId));
+        count++;
+    }
+    return Results.Ok(new { count });
+});
+
+app.MapGet("/api/sync/todos/download", (HttpRequest req) =>
+{
+    var auth = GetAuth(dbPath, req);
+    if (auth == null) return Results.Unauthorized();
+    var since = req.Query["since"].FirstOrDefault();
+    var sql = "SELECT id,title,description,is_completed,priority,due_date,created_at,completed_at,device_id FROM todo_items WHERE user_id=@uid";
+    var prms = new List<(string, object?)> { ("@uid", auth.Value.userId) };
+    if (!string.IsNullOrEmpty(since)) { sql += " AND created_at > @s"; prms.Add(("@s", since)); }
+    sql += " ORDER BY id LIMIT " + MaxSyncLimit;
+    return Results.Ok(Query(dbPath, sql, prms));
+});
+
+app.MapPost("/api/sync/schedules/upload", (HttpRequest req, List<ScheduleDto> schedules) =>
+{
+    var auth = GetAuth(dbPath, req);
+    if (auth == null) return Results.Unauthorized();
+    int count = 0;
+    foreach (var s in schedules)
+    {
+        Exec(dbPath,
+            @"INSERT OR IGNORE INTO schedules(id,title,description,start_time,end_time,is_all_day,color,created_at,device_id,user_id)
+              VALUES(@id,@ti,@d,@st,@et,@ia,@c,@ca,@di,@uid)",
+            ("@id", s.Id), ("@ti", s.Title), ("@d", s.Description),
+            ("@st", s.StartTime), ("@et", s.EndTime),
+            ("@ia", s.IsAllDay ? 1 : 0), ("@c", s.Color),
+            ("@ca", s.CreatedAt), ("@di", s.DeviceId), ("@uid", auth.Value.userId));
+        count++;
+    }
+    return Results.Ok(new { count });
+});
+
+app.MapGet("/api/sync/schedules/download", (HttpRequest req) =>
+{
+    var auth = GetAuth(dbPath, req);
+    if (auth == null) return Results.Unauthorized();
+    var since = req.Query["since"].FirstOrDefault();
+    var sql = "SELECT id,title,description,start_time,end_time,is_all_day,color,created_at,device_id FROM schedules WHERE user_id=@uid";
+    var prms = new List<(string, object?)> { ("@uid", auth.Value.userId) };
+    if (!string.IsNullOrEmpty(since)) { sql += " AND created_at > @s"; prms.Add(("@s", since)); }
+    sql += " ORDER BY start_time,id LIMIT " + MaxSyncLimit;
+    return Results.Ok(Query(dbPath, sql, prms));
+});
+
+app.MapGet("/", () => Results.Ok(new { service = "TimeTracker Cloud", version = "3.0" }));
 
 app.Run();
 
@@ -143,7 +205,9 @@ static void InitDb(string path)
     foreach (var sql in new[] {
         "PRAGMA journal_mode=WAL",
         "CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY AUTOINCREMENT,username TEXT UNIQUE NOT NULL,password TEXT NOT NULL,token TEXT,expires_at TEXT,created_at TEXT)",
-        "CREATE TABLE IF NOT EXISTS time_records(id INTEGER NOT NULL,process_name TEXT NOT NULL,window_title TEXT,usage_time INTEGER NOT NULL,date TEXT NOT NULL,device_id TEXT NOT NULL,category_id INTEGER,is_foreground INTEGER DEFAULT 1,activity_id INTEGER,user_id INTEGER NOT NULL,PRIMARY KEY(id,user_id))" })
+        "CREATE TABLE IF NOT EXISTS time_records(id INTEGER NOT NULL,process_name TEXT NOT NULL,window_title TEXT,usage_time INTEGER NOT NULL,date TEXT NOT NULL,device_id TEXT NOT NULL,category_id INTEGER,is_foreground INTEGER DEFAULT 1,activity_id INTEGER,user_id INTEGER NOT NULL,PRIMARY KEY(id,user_id))",
+        "CREATE TABLE IF NOT EXISTS todo_items(id INTEGER NOT NULL,title TEXT NOT NULL,description TEXT DEFAULT '',is_completed INTEGER DEFAULT 0,priority INTEGER DEFAULT 1,due_date TEXT,created_at TEXT NOT NULL,completed_at TEXT,device_id TEXT NOT NULL,user_id INTEGER NOT NULL,PRIMARY KEY(id,user_id))",
+        "CREATE TABLE IF NOT EXISTS schedules(id INTEGER NOT NULL,title TEXT NOT NULL,description TEXT DEFAULT '',start_time TEXT NOT NULL,end_time TEXT,is_all_day INTEGER DEFAULT 0,color TEXT DEFAULT '#6c5ce7',created_at TEXT NOT NULL,device_id TEXT NOT NULL,user_id INTEGER NOT NULL,PRIMARY KEY(id,user_id))" })
     {
         using var cmd = new SqliteCommand(sql, c);
         cmd.ExecuteNonQuery();
@@ -224,4 +288,30 @@ record RecordDto
     public int? CategoryId { get; init; }
     public bool IsForeground { get; init; } = true;
     public int? ActivityId { get; init; }
+}
+
+record TodoDto
+{
+    public int Id { get; init; }
+    public string Title { get; init; } = "";
+    public string Description { get; init; } = "";
+    public bool IsCompleted { get; init; }
+    public int Priority { get; init; } = 1;
+    public string? DueDate { get; init; }
+    public string CreatedAt { get; init; } = "";
+    public string? CompletedAt { get; init; }
+    public string DeviceId { get; init; } = "";
+}
+
+record ScheduleDto
+{
+    public int Id { get; init; }
+    public string Title { get; init; } = "";
+    public string Description { get; init; } = "";
+    public string StartTime { get; init; } = "";
+    public string? EndTime { get; init; }
+    public bool IsAllDay { get; init; }
+    public string Color { get; init; } = "#6c5ce7";
+    public string CreatedAt { get; init; } = "";
+    public string DeviceId { get; init; } = "";
 }

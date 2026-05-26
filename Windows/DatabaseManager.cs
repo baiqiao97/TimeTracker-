@@ -42,7 +42,9 @@ namespace TimeTracker
                     "CREATE TABLE IF NOT EXISTS time_records (id INTEGER PRIMARY KEY AUTOINCREMENT, process_name TEXT NOT NULL, window_title TEXT, usage_time INTEGER NOT NULL, date TEXT NOT NULL, device_id TEXT NOT NULL, category_id INTEGER DEFAULT NULL, is_foreground INTEGER DEFAULT 1, activity_id INTEGER DEFAULT NULL, user_id INTEGER DEFAULT NULL)",
                     "CREATE TABLE IF NOT EXISTS devices (device_id TEXT PRIMARY KEY, device_name TEXT NOT NULL, platform TEXT NOT NULL, last_sync TEXT)",
                     "CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, device_id TEXT NOT NULL)",
-                    "CREATE TABLE IF NOT EXISTS activities (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, color TEXT DEFAULT '#6c5ce7', icon TEXT DEFAULT '📌')"
+                    "CREATE TABLE IF NOT EXISTS activities (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, color TEXT DEFAULT '#6c5ce7', icon TEXT DEFAULT '📌')",
+                    "CREATE TABLE IF NOT EXISTS todo_items (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, description TEXT DEFAULT '', is_completed INTEGER DEFAULT 0, priority INTEGER DEFAULT 1, due_date TEXT, created_at TEXT NOT NULL, completed_at TEXT, device_id TEXT NOT NULL, user_id INTEGER DEFAULT NULL)",
+                    "CREATE TABLE IF NOT EXISTS schedules (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, description TEXT DEFAULT '', start_time TEXT NOT NULL, end_time TEXT, is_all_day INTEGER DEFAULT 0, color TEXT DEFAULT '#6c5ce7', created_at TEXT NOT NULL, device_id TEXT NOT NULL, user_id INTEGER DEFAULT NULL)"
                 ];
 
 #pragma warning disable CA2100
@@ -487,6 +489,174 @@ namespace TimeTracker
                     : null
             };
         }
+
+        // ===== Todo CRUD =====
+
+        public void InsertTodo(string title, string description, int priority, string? dueDate, string deviceId, int? userId = null)
+        {
+            const string sql = "INSERT INTO todo_items(title,description,priority,due_date,created_at,device_id,user_id) VALUES(@t,@d,@p,@dd,@ca,@di,@ui)";
+            using var conn = CreateConnection();
+            using var cmd = new SQLiteCommand(sql, conn);
+            cmd.Parameters.AddWithValue("@t", title);
+            cmd.Parameters.AddWithValue("@d", description);
+            cmd.Parameters.AddWithValue("@p", priority);
+            cmd.Parameters.AddWithValue("@dd", (object?)dueDate ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@ca", DateTime.Now.ToString(DateFormat, CultureInfo.InvariantCulture));
+            cmd.Parameters.AddWithValue("@di", deviceId);
+            cmd.Parameters.AddWithValue("@ui", userId.HasValue ? userId.Value : DBNull.Value);
+            cmd.ExecuteNonQuery();
+        }
+
+        public void UpdateTodo(TodoItemData item)
+        {
+            const string sql = "UPDATE todo_items SET title=@t,description=@d,is_completed=@ic,priority=@p,due_date=@dd,completed_at=@ca WHERE id=@id";
+            using var conn = CreateConnection();
+            using var cmd = new SQLiteCommand(sql, conn);
+            cmd.Parameters.AddWithValue("@t", item.Title);
+            cmd.Parameters.AddWithValue("@d", item.Description);
+            cmd.Parameters.AddWithValue("@ic", item.IsCompleted ? 1 : 0);
+            cmd.Parameters.AddWithValue("@p", item.Priority);
+            cmd.Parameters.AddWithValue("@dd", (object?)item.DueDate ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@ca", item.CompletedAt != null ? item.CompletedAt : DBNull.Value);
+            cmd.Parameters.AddWithValue("@id", item.Id);
+            cmd.ExecuteNonQuery();
+        }
+
+        public void ToggleTodo(int id, bool completed)
+        {
+            var completedAt = completed ? DateTime.Now.ToString(DateFormat, CultureInfo.InvariantCulture) : null;
+            const string sql = "UPDATE todo_items SET is_completed=@ic,completed_at=@ca WHERE id=@id";
+            using var conn = CreateConnection();
+            using var cmd = new SQLiteCommand(sql, conn);
+            cmd.Parameters.AddWithValue("@ic", completed ? 1 : 0);
+            cmd.Parameters.AddWithValue("@ca", (object?)completedAt ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@id", id);
+            cmd.ExecuteNonQuery();
+        }
+
+        public void DeleteTodo(int id)
+        {
+            const string sql = "DELETE FROM todo_items WHERE id=@id";
+            using var conn = CreateConnection();
+            using var cmd = new SQLiteCommand(sql, conn);
+            cmd.Parameters.AddWithValue("@id", id);
+            cmd.ExecuteNonQuery();
+        }
+
+        public List<TodoItemData> GetTodos(bool includeCompleted = true, int? userId = null)
+        {
+            var result = new List<TodoItemData>();
+            var sql = "SELECT * FROM todo_items";
+            if (!includeCompleted) sql += " WHERE is_completed=0";
+            else if (userId.HasValue) sql += " WHERE user_id=@ui";
+            if (!includeCompleted && userId.HasValue) sql += " AND user_id=@ui";
+            sql += " ORDER BY is_completed ASC, priority DESC, due_date ASC, created_at DESC";
+            using var conn = CreateConnection();
+            using var cmd = new SQLiteCommand(sql, conn);
+            if (userId.HasValue) cmd.Parameters.AddWithValue("@ui", userId.Value);
+            using var r = cmd.ExecuteReader();
+            while (r.Read()) result.Add(MapTodo(r));
+            return result;
+        }
+
+        private static TodoItemData MapTodo(SQLiteDataReader r)
+        {
+            return new TodoItemData
+            {
+                Id = Convert.ToInt32(r["id"], CultureInfo.InvariantCulture),
+                Title = r["title"].ToString()!,
+                Description = r["description"]?.ToString() ?? "",
+                IsCompleted = Convert.ToInt32(r["is_completed"], CultureInfo.InvariantCulture) == 1,
+                Priority = Convert.ToInt32(r["priority"], CultureInfo.InvariantCulture),
+                DueDate = r["due_date"] != DBNull.Value ? r["due_date"].ToString() : null,
+                CreatedAt = r["created_at"].ToString()!,
+                CompletedAt = r["completed_at"] != DBNull.Value ? r["completed_at"].ToString() : null,
+                DeviceId = r["device_id"].ToString()!,
+                UserId = r["user_id"] != DBNull.Value ? Convert.ToInt32(r["user_id"], CultureInfo.InvariantCulture) : null
+            };
+        }
+
+        // ===== Schedule CRUD =====
+
+        public void InsertSchedule(string title, string description, string startTime, string? endTime, bool isAllDay, string color, string deviceId, int? userId = null)
+        {
+            const string sql = "INSERT INTO schedules(title,description,start_time,end_time,is_all_day,color,created_at,device_id,user_id) VALUES(@t,@d,@st,@et,@ia,@c,@ca,@di,@ui)";
+            using var conn = CreateConnection();
+            using var cmd = new SQLiteCommand(sql, conn);
+            cmd.Parameters.AddWithValue("@t", title);
+            cmd.Parameters.AddWithValue("@d", description);
+            cmd.Parameters.AddWithValue("@st", startTime);
+            cmd.Parameters.AddWithValue("@et", (object?)endTime ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@ia", isAllDay ? 1 : 0);
+            cmd.Parameters.AddWithValue("@c", color);
+            cmd.Parameters.AddWithValue("@ca", DateTime.Now.ToString(DateFormat, CultureInfo.InvariantCulture));
+            cmd.Parameters.AddWithValue("@di", deviceId);
+            cmd.Parameters.AddWithValue("@ui", userId.HasValue ? userId.Value : DBNull.Value);
+            cmd.ExecuteNonQuery();
+        }
+
+        public void UpdateSchedule(ScheduleData item)
+        {
+            const string sql = "UPDATE schedules SET title=@t,description=@d,start_time=@st,end_time=@et,is_all_day=@ia,color=@c WHERE id=@id";
+            using var conn = CreateConnection();
+            using var cmd = new SQLiteCommand(sql, conn);
+            cmd.Parameters.AddWithValue("@t", item.Title);
+            cmd.Parameters.AddWithValue("@d", item.Description);
+            cmd.Parameters.AddWithValue("@st", item.StartTime);
+            cmd.Parameters.AddWithValue("@et", (object?)item.EndTime ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@ia", item.IsAllDay ? 1 : 0);
+            cmd.Parameters.AddWithValue("@c", item.Color);
+            cmd.Parameters.AddWithValue("@id", item.Id);
+            cmd.ExecuteNonQuery();
+        }
+
+        public void DeleteSchedule(int id)
+        {
+            const string sql = "DELETE FROM schedules WHERE id=@id";
+            using var conn = CreateConnection();
+            using var cmd = new SQLiteCommand(sql, conn);
+            cmd.Parameters.AddWithValue("@id", id);
+            cmd.ExecuteNonQuery();
+        }
+
+        public List<ScheduleData> GetSchedules(DateTime? from = null, DateTime? to = null, int? userId = null)
+        {
+            var result = new List<ScheduleData>();
+            var sql = "SELECT * FROM schedules";
+            var conditions = new List<string>();
+            if (from.HasValue) conditions.Add("start_time >= @from");
+            if (to.HasValue) conditions.Add("start_time <= @to");
+            if (userId.HasValue) conditions.Add("user_id=@ui");
+            if (conditions.Count > 0) sql += " WHERE " + string.Join(" AND ", conditions);
+            sql += " ORDER BY start_time ASC";
+            using var conn = CreateConnection();
+#pragma warning disable CA2100
+            using var cmd = new SQLiteCommand(sql, conn);
+#pragma warning restore CA2100
+            if (from.HasValue) cmd.Parameters.AddWithValue("@from", from.Value.ToString(DateFormat, CultureInfo.InvariantCulture));
+            if (to.HasValue) cmd.Parameters.AddWithValue("@to", to.Value.ToString(DateFormat, CultureInfo.InvariantCulture));
+            if (userId.HasValue) cmd.Parameters.AddWithValue("@ui", userId.Value);
+            using var r = cmd.ExecuteReader();
+            while (r.Read()) result.Add(MapSchedule(r));
+            return result;
+        }
+
+        private static ScheduleData MapSchedule(SQLiteDataReader r)
+        {
+            return new ScheduleData
+            {
+                Id = Convert.ToInt32(r["id"], CultureInfo.InvariantCulture),
+                Title = r["title"].ToString()!,
+                Description = r["description"]?.ToString() ?? "",
+                StartTime = r["start_time"].ToString()!,
+                EndTime = r["end_time"] != DBNull.Value ? r["end_time"].ToString() : null,
+                IsAllDay = Convert.ToInt32(r["is_all_day"], CultureInfo.InvariantCulture) == 1,
+                Color = r["color"].ToString()!,
+                CreatedAt = r["created_at"].ToString()!,
+                DeviceId = r["device_id"].ToString()!,
+                UserId = r["user_id"] != DBNull.Value ? Convert.ToInt32(r["user_id"], CultureInfo.InvariantCulture) : null
+            };
+        }
     }
 
     public class TimeRecordData
@@ -545,5 +715,33 @@ namespace TimeTracker
         public string Name { get; set; } = string.Empty;
         public string Color { get; set; } = "#6c5ce7";
         public long TotalUsage { get; set; }
+    }
+
+    public class TodoItemData
+    {
+        public int Id { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public bool IsCompleted { get; set; }
+        public int Priority { get; set; } = 1;
+        public string? DueDate { get; set; }
+        public string CreatedAt { get; set; } = string.Empty;
+        public string? CompletedAt { get; set; }
+        public string DeviceId { get; set; } = string.Empty;
+        public int? UserId { get; set; }
+    }
+
+    public class ScheduleData
+    {
+        public int Id { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string StartTime { get; set; } = string.Empty;
+        public string? EndTime { get; set; }
+        public bool IsAllDay { get; set; }
+        public string Color { get; set; } = "#6c5ce7";
+        public string CreatedAt { get; set; } = string.Empty;
+        public string DeviceId { get; set; } = string.Empty;
+        public int? UserId { get; set; }
     }
 }
