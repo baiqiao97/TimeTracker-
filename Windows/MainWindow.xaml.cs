@@ -353,6 +353,24 @@ namespace TimeTracker
         private Task SwitchToPanelAsync(Grid panel) =>
             AnimatePanelTransition(panel);
 
+        private async Task FadeRefreshContentAsync(Action loadAction)
+        {
+            contentBorder.BeginAnimation(UIElement.OpacityProperty, null);
+            var tcs = new TaskCompletionSource<bool>();
+            var outAnim = new DoubleAnimation(1.0, 0.25, TimeSpan.FromMilliseconds(80))
+            { EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseIn } };
+            outAnim.Completed += (_, _) => tcs.SetResult(true);
+            contentBorder.BeginAnimation(UIElement.OpacityProperty, outAnim);
+            await tcs.Task;
+
+            loadAction();
+
+            contentBorder.BeginAnimation(UIElement.OpacityProperty, null);
+            var inAnim = new DoubleAnimation(0.25, 1.0, TimeSpan.FromMilliseconds(140))
+            { EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut } };
+            contentBorder.BeginAnimation(UIElement.OpacityProperty, inAnim);
+        }
+
         private async void NavOverview_Click(object sender, RoutedEventArgs e)
         {
             _currentRange = "daily";
@@ -432,20 +450,35 @@ namespace TimeTracker
 
         // ======================== ACTION BUTTONS ========================
 
-        private void ActionDaily_Click(object s, RoutedEventArgs e)
-        { _currentRange = "daily"; SetPage("每日统计", "今日各应用使用详情"); LoadStats(); ShowProcessStats(); RefreshChartIfVisible(); }
+        private async void ActionDaily_Click(object s, RoutedEventArgs e)
+        {
+            _currentRange = "daily"; SetPage("每日统计", "今日各应用使用详情");
+            await FadeRefreshContentAsync(() => { LoadStats(); ShowProcessStats(); RefreshChartIfVisible(); });
+        }
 
-        private void ActionWeekly_Click(object s, RoutedEventArgs e)
-        { _currentRange = "weekly"; SetPage("每周统计", "近7天各应用使用详情"); LoadStats(); ShowProcessStats(); RefreshChartIfVisible(); }
+        private async void ActionWeekly_Click(object s, RoutedEventArgs e)
+        {
+            _currentRange = "weekly"; SetPage("每周统计", "近7天各应用使用详情");
+            await FadeRefreshContentAsync(() => { LoadStats(); ShowProcessStats(); RefreshChartIfVisible(); });
+        }
 
-        private void ActionMonthly_Click(object s, RoutedEventArgs e)
-        { _currentRange = "monthly"; SetPage("每月统计", "近30天各应用使用详情"); LoadStats(); ShowProcessStats(); RefreshChartIfVisible(); }
+        private async void ActionMonthly_Click(object s, RoutedEventArgs e)
+        {
+            _currentRange = "monthly"; SetPage("每月统计", "近30天各应用使用详情");
+            await FadeRefreshContentAsync(() => { LoadStats(); ShowProcessStats(); RefreshChartIfVisible(); });
+        }
 
-        private void ActionCategory_Click(object s, RoutedEventArgs e)
-        { _currentRange = "weekly"; SetPage("分类统计", "按标签分类的使用时长"); LoadStats(); ShowCategoryStats(); }
+        private async void ActionCategory_Click(object s, RoutedEventArgs e)
+        {
+            _currentRange = "weekly"; SetPage("分类统计", "按标签分类的使用时长");
+            await FadeRefreshContentAsync(() => { LoadStats(); ShowCategoryStats(); });
+        }
 
-        private void ActionForeground_Click(object s, RoutedEventArgs e)
-        { SetPage("前台/后台", "前台与后台使用时间对比"); LoadStats(); ShowForegroundStats(); }
+        private async void ActionForeground_Click(object s, RoutedEventArgs e)
+        {
+            SetPage("前台/后台", "前台与后台使用时间对比");
+            await FadeRefreshContentAsync(() => { LoadStats(); ShowForegroundStats(); });
+        }
 
         private void RefreshChartIfVisible()
         {
