@@ -21,6 +21,7 @@ namespace TimeTracker
         public MainWindow()
         {
             InitializeComponent();
+            _allPanels = new UIElement[] { statsPanel, actionPanel, contentBorder, todoPanel, schedulePanel };
             AppSettings.Load();
             _databaseManager = new DatabaseManager();
             InitializeDefaultCategories();
@@ -306,92 +307,119 @@ namespace TimeTracker
 
         private static string DeviceId => Environment.MachineName + "-" + Environment.OSVersion.Version;
 
-        private void ShowMainPanels()
+        private readonly UIElement[] _allPanels;
+        private bool _isAnimating;
+
+        private async Task AnimatePanelTransition(params UIElement[] showPanels)
         {
-            statsPanel.Visibility = Visibility.Visible;
-            actionPanel.Visibility = Visibility.Visible;
-            contentBorder.Visibility = Visibility.Visible;
-            todoPanel.Visibility = Visibility.Collapsed;
-            schedulePanel.Visibility = Visibility.Collapsed;
+            if (_isAnimating) return;
+            _isAnimating = true;
+
+            var toHide = _allPanels.Where(p => p.Visibility == Visibility.Visible && !showPanels.Contains(p)).ToList();
+
+            var fadeOutTasks = new List<Task>();
+            foreach (var panel in toHide)
+            {
+                panel.BeginAnimation(UIElement.OpacityProperty, null);
+                var tcs = new TaskCompletionSource<bool>();
+                var anim = new DoubleAnimation(1.0, 0.0, TimeSpan.FromMilliseconds(120))
+                { EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseIn } };
+                anim.Completed += (_, _) => { panel.Visibility = Visibility.Collapsed; tcs.SetResult(true); };
+                panel.BeginAnimation(UIElement.OpacityProperty, anim);
+                fadeOutTasks.Add(tcs.Task);
+            }
+
+            foreach (var panel in _allPanels.Except(showPanels).Except(toHide))
+                panel.Visibility = Visibility.Collapsed;
+
+            await Task.WhenAll(fadeOutTasks);
+
+            foreach (var panel in showPanels)
+            {
+                panel.BeginAnimation(UIElement.OpacityProperty, null);
+                panel.Visibility = Visibility.Visible;
+                panel.Opacity = 0;
+                var anim = new DoubleAnimation(0.0, 1.0, TimeSpan.FromMilliseconds(160))
+                { EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut } };
+                panel.BeginAnimation(UIElement.OpacityProperty, anim);
+            }
+
+            _isAnimating = false;
         }
 
-        private void SwitchToPanel(Grid panel)
-        {
-            statsPanel.Visibility = Visibility.Collapsed;
-            actionPanel.Visibility = Visibility.Collapsed;
-            contentBorder.Visibility = Visibility.Collapsed;
-            todoPanel.Visibility = Visibility.Collapsed;
-            schedulePanel.Visibility = Visibility.Collapsed;
-            panel.Visibility = Visibility.Visible;
-        }
+        private Task ShowMainPanelsAsync() =>
+            AnimatePanelTransition(statsPanel, actionPanel, contentBorder);
 
-        private void NavOverview_Click(object sender, RoutedEventArgs e)
+        private Task SwitchToPanelAsync(Grid panel) =>
+            AnimatePanelTransition(panel);
+
+        private async void NavOverview_Click(object sender, RoutedEventArgs e)
         {
             _currentRange = "daily";
             SetPage("概览", "今日应用使用总览");
             HighlightNav(btnOverview);
-            ShowMainPanels();
+            await ShowMainPanelsAsync();
             LoadStats();
             RefreshChartIfVisible();
         }
 
-        private void NavDaily_Click(object sender, RoutedEventArgs e)
+        private async void NavDaily_Click(object sender, RoutedEventArgs e)
         {
             _currentRange = "daily";
             SetPage("每日统计", "今日各应用使用详情");
             HighlightNav(btnDaily);
-            ShowMainPanels();
+            await ShowMainPanelsAsync();
             LoadStats();
             ShowProcessStats();
             RefreshChartIfVisible();
         }
 
-        private void NavWeekly_Click(object sender, RoutedEventArgs e)
+        private async void NavWeekly_Click(object sender, RoutedEventArgs e)
         {
             _currentRange = "weekly";
             SetPage("每周统计", "近7天各应用使用详情");
             HighlightNav(btnWeekly);
-            ShowMainPanels();
+            await ShowMainPanelsAsync();
             LoadStats();
             ShowProcessStats();
             RefreshChartIfVisible();
         }
 
-        private void NavCategory_Click(object sender, RoutedEventArgs e)
+        private async void NavCategory_Click(object sender, RoutedEventArgs e)
         {
             _currentRange = "weekly";
             SetPage("分类统计", "按标签分类的使用时长");
             HighlightNav(btnCategory);
-            ShowMainPanels();
+            await ShowMainPanelsAsync();
             LoadStats();
             ShowCategoryStats();
             RefreshChartIfVisible();
         }
 
-        private void NavActivity_Click(object sender, RoutedEventArgs e)
+        private async void NavActivity_Click(object sender, RoutedEventArgs e)
         {
             _currentRange = "weekly";
             SetPage("活动统计", "按活动分类查看使用时长");
             HighlightNav(btnActivity);
-            ShowMainPanels();
+            await ShowMainPanelsAsync();
             LoadStats();
             ShowActivityStats();
             RefreshChartIfVisible();
         }
 
-        private void NavTodoList_Click(object sender, RoutedEventArgs e)
+        private async void NavTodoList_Click(object sender, RoutedEventArgs e)
         {
             SetPage("待办清单", "管理你的待办事项");
             HighlightNav(btnTodoList);
-            SwitchToPanel(todoPanel);
+            await SwitchToPanelAsync(todoPanel);
             LoadTodoItems();
         }
 
-        private void NavSchedule_Click(object sender, RoutedEventArgs e)
+        private async void NavSchedule_Click(object sender, RoutedEventArgs e)
         {
             SetPage("日程安排", "管理你的日程计划");
             HighlightNav(btnSchedule);
-            SwitchToPanel(schedulePanel);
+            await SwitchToPanelAsync(schedulePanel);
             LoadSchedules();
         }
 
