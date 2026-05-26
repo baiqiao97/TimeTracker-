@@ -262,7 +262,7 @@
                                     BorderBrush="Transparent" Background="Transparent"
                                     Width="28" Height="28"/>
                             <Border x:Name="dot" CornerRadius="9" Width="18" Height="18"
-                                    Background="{TemplateBinding Tag}"
+                                    Background="{TemplateBinding Background}"
                                     HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Grid>
                         <ControlTemplate.Triggers>
@@ -282,10 +282,10 @@
                     <ControlTemplate TargetType="Button">
                         <Grid>
                             <Border x:Name="ring" CornerRadius="15" BorderThickness="2"
-                                    BorderBrush="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"
+                                    BorderBrush="{TemplateBinding Background}"
                                     Background="Transparent" Width="28" Height="28"/>
                             <Border x:Name="dot" CornerRadius="9" Width="18" Height="18"
-                                    Background="{TemplateBinding Tag}"
+                                    Background="{TemplateBinding Background}"
                                     HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Grid>
                     </ControlTemplate>
@@ -726,15 +726,15 @@
                                       Margin="0,0,10,0"/>
                             <StackPanel x:Name="colorPickerGroup" Orientation="Horizontal" Margin="0,0,10,0"
                                         VerticalAlignment="Center">
-                                <Button x:Name="btnColor1" Tag="#6c5ce7" Click="Color_Click"
+                                <Button x:Name="btnColor1" Background="#6c5ce7" Tag="#6c5ce7" Click="Color_Click"
                                         Style="{StaticResource ColorPickerBtnSelected}"/>
-                                <Button x:Name="btnColor2" Tag="#10b981" Click="Color_Click"
+                                <Button x:Name="btnColor2" Background="#10b981" Tag="#10b981" Click="Color_Click"
                                         Style="{StaticResource ColorPickerBtn}"/>
-                                <Button x:Name="btnColor3" Tag="#f59e0b" Click="Color_Click"
+                                <Button x:Name="btnColor3" Background="#f59e0b" Tag="#f59e0b" Click="Color_Click"
                                         Style="{StaticResource ColorPickerBtn}"/>
-                                <Button x:Name="btnColor4" Tag="#ef4444" Click="Color_Click"
+                                <Button x:Name="btnColor4" Background="#ef4444" Tag="#ef4444" Click="Color_Click"
                                         Style="{StaticResource ColorPickerBtn}"/>
-                                <Button x:Name="btnColor5" Tag="#3b82f6" Click="Color_Click"
+                                <Button x:Name="btnColor5" Background="#3b82f6" Tag="#3b82f6" Click="Color_Click"
                                         Style="{StaticResource ColorPickerBtn}"/>
                             </StackPanel>
                             <Button Content="添加" Style="{StaticResource PrimaryBtn}" Click="ScheduleAdd_Click"/>
