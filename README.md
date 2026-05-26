@@ -31,16 +31,18 @@ TimeTracker/
 
 ## 快速开始
 
+```bash
+# 克隆仓库
+git clone https://github.com/baiqiao97/TimeTracker-.git
+cd TimeTracker-
+```
+
 ### Windows 桌面端
 
 ```bash
 cd Windows
 dotnet run
 ```
-
-### Android 端
-
-用 Android Studio 打开 `Android/` 目录，直接运行。
 
 ### 自建服务端
 
@@ -49,53 +51,112 @@ cd Server
 dotnet run
 ```
 
+### Android 端
+
+用 Android Studio 打开 `Android/` 目录，直接运行。
+
 服务端默认监听 `http://localhost:5080`。在设置中配置服务端地址即可启用跨设备同步。
 
 ## 部署服务端
 
-### 方式一：Docker（推荐）
+### 方式一：Docker（推荐，从零开始）
 
 ```bash
+# 1. 克隆仓库
+git clone https://github.com/baiqiao97/TimeTracker-.git
+cd TimeTracker-
+
+# 2. 进入服务端目录构建镜像
 cd Server
 docker build -t timetracker-server .
-docker run -d -p 5080:5080 --restart always --name timetracker timetracker-server
+
+# 3. 运行容器（后台运行，开机自启，端口 5080）
+docker run -d \
+  --name timetracker \
+  --restart always \
+  -p 5080:5080 \
+  -v timetracker-data:/app/data \
+  timetracker-server
+
+# 4. 查看日志确认启动成功
+docker logs timetracker
+```
+
+> 服务端启动后访问 `http://你的服务器IP:5080` 即可。
+
+#### Docker Compose（推荐生产环境）
+
+```yaml
+# docker-compose.yml
+version: '3.8'
+services:
+  timetracker:
+    build: ./Server
+    container_name: timetracker
+    restart: always
+    ports:
+      - "5080:5080"
+    volumes:
+      - ./data:/app/data
+```
+
+```bash
+docker compose up -d
+```
+
+#### 常用管理命令
+
+```bash
+docker logs timetracker         # 查看日志
+docker restart timetracker      # 重启服务
+docker stop timetracker         # 停止服务
+docker rm timetracker           # 删除容器（数据在 volume 中不受影响）
+docker exec -it timetracker sh  # 进入容器
 ```
 
 ### 方式二：Linux VPS 手动部署
 
 ```bash
-# 安装 .NET Runtime
-wget https://dot.net/v1/dotnet-install.sh
+# 1. 克隆仓库
+git clone https://github.com/baiqiao97/TimeTracker-.git
+cd TimeTracker-/Server
+
+# 2. 安装 .NET Runtime（如果未安装）
+wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh
 chmod +x dotnet-install.sh
-./dotnet-install.sh --channel 8.0 --runtime aspnetcore
+./dotnet-install.sh --channel 10.0 --runtime aspnetcore
+export PATH="$HOME/.dotnet:$PATH"
 
-# 上传发布包
-scp -r publish/ user@your-server:/opt/timetracker/
+# 3. 发布服务端
+dotnet publish -c Release -r linux-x64 --self-contained -o /opt/timetracker
 
-# 启动服务端
+# 4. 启动
 cd /opt/timetracker
-nohup dotnet TimeTrackerServer.dll --urls "http://0.0.0.0:5080" > server.log 2>&1 &
+nohup ./TimeTrackerServer --urls "http://0.0.0.0:5080" > server.log 2>&1 &
+
+# 5. 验证
+curl http://localhost:5080
 ```
 
-### 方式三：发布为可执行文件
+### 方式三：Windows 本地运行
 
 ```bash
-cd Server
-
-# Windows
-dotnet publish -c Release -r win-x64 --self-contained -o publish/win
-
-# Linux
-dotnet publish -c Release -r linux-x64 --self-contained -o publish/linux
-
-# 运行
-./publish/linux/TimeTrackerServer
+git clone https://github.com/baiqiao97/TimeTracker-.git
+cd TimeTracker-/Server
+dotnet run
 ```
 
-### 配置 systemd 服务（Linux）
+### 配置 systemd 开机自启（Linux）
+
+创建服务文件：
+
+```bash
+sudo nano /etc/systemd/system/timetracker.service
+```
+
+写入以下内容：
 
 ```ini
-# /etc/systemd/system/timetracker.service
 [Unit]
 Description=TimeTracker Server
 After=network.target
@@ -105,32 +166,55 @@ WorkingDirectory=/opt/timetracker
 ExecStart=/opt/timetracker/TimeTrackerServer --urls "http://0.0.0.0:5080"
 Restart=always
 RestartSec=5
+User=www-data
+Environment=DOTNET_ENVIRONMENT=Production
 
 [Install]
 WantedBy=multi-user.target
 ```
 
+启动服务：
+
 ```bash
+sudo systemctl daemon-reload
 sudo systemctl enable timetracker --now
+sudo systemctl status timetracker
 ```
 
 ### 配置 Nginx 反向代理（可选 HTTPS）
 
+```bash
+sudo apt install nginx certbot python3-certbot-nginx -y
+
+sudo nano /etc/nginx/sites-available/timetracker
+```
+
 ```nginx
 server {
     listen 80;
-    server_name your-domain.com;
+    server_name tracker.your-domain.com;
 
     location / {
         proxy_pass http://127.0.0.1:5080;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
     }
 }
 ```
 
-服务端部署后，在客户端设置中填写 `http://你的服务器IP:5080` 即可连接。
+```bash
+sudo ln -s /etc/nginx/sites-available/timetracker /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
+
+# 申请免费 SSL 证书
+sudo certbot --nginx -d tracker.your-domain.com
+```
+
+### 服务端部署完成后
+
+在 Windows 客户端「设置 → 云同步」中填写服务端地址 `http://你的服务器IP:5080`，注册账号后即可跨设备同步。
 
 ## 同步模式
 
