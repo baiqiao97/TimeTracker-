@@ -54,7 +54,7 @@
                         </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="ring" Property="Stroke" Value="{TemplateBinding Tag}"/>
+                                <Setter TargetName="ring" Property="Stroke" Value="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
