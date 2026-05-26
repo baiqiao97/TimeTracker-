@@ -15,6 +15,9 @@ public interface TimeRecordDao {
     @Insert
     void insert(TimeRecord timeRecord);
 
+    @Insert
+    void insertAll(List<TimeRecord> records);
+
     @Query("SELECT * FROM time_records WHERE date BETWEEN :startDate AND :endDate ORDER BY date DESC")
     List<TimeRecord> getRecordsByDateRange(Date startDate, Date endDate);
 

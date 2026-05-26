@@ -68,11 +68,11 @@ namespace TimeTracker
             try
             {
                 if (!_trackingTask.Wait(TimeSpan.FromSeconds(5)))
-                    Console.WriteLine("Warning: Tracking task did not stop in time");
+                    Logger.Warn("Tracking task did not stop in time");
             }
             catch (AggregateException ex)
             {
-                Console.WriteLine($"Tracking task stopped with error: {ex.InnerException?.Message}");
+                Logger.Error("Tracking task stopped with error", ex.InnerException);
             }
             FlushPendingWrites();
         }
@@ -158,7 +158,7 @@ namespace TimeTracker
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error loading category map: {ex.Message}");
+                Logger.Error("Error loading category map", ex);
             }
         }
 
@@ -248,7 +248,7 @@ namespace TimeTracker
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Process lookup error: {ex.Message}");
+                    Logger.Error($"Process lookup error for pid {processId}", ex);
                     return null;
                 }
 
@@ -271,7 +271,7 @@ namespace TimeTracker
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"GetActiveWindowInfo error: {ex.Message}");
+                Logger.Error("GetActiveWindowInfo error", ex);
                 return null;
             }
         }
@@ -318,7 +318,7 @@ namespace TimeTracker
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"UpdateProcessUsage error: {ex.Message}");
+                Logger.Error("UpdateProcessUsage error", ex);
             }
         }
 
@@ -343,10 +343,10 @@ namespace TimeTracker
                             _deviceId, categoryId, false,
                             AppSettings.CurrentActivityId);
                     }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"Database insert error: {ex.Message}");
-                    }
+            catch (Exception ex)
+            {
+                Logger.Error("Database insert error", ex);
+            }
                 }
 
                 _currentProcessName = "Background";
@@ -355,7 +355,7 @@ namespace TimeTracker
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"UpdateBackgroundProcessUsage error: {ex.Message}");
+                Logger.Error("UpdateBackgroundProcessUsage error", ex);
             }
         }
 
@@ -363,21 +363,33 @@ namespace TimeTracker
         {
             try
             {
+                if (_pendingDbWrite.IsEmpty) return;
+
+                var records = new List<TimeRecordData>();
                 foreach (var kvp in _pendingDbWrite)
                 {
                     if (kvp.Value.UsageTime <= 0) continue;
                     int? categoryId = GetCategoryIdForProcess(kvp.Key);
-                    // 使用每个进程自身的窗口标题，而非当前窗口标题
-                    _databaseManager.InsertTimeRecord(
-                        kvp.Key, kvp.Value.WindowTitle, kvp.Value.UsageTime,
-                        _deviceId, categoryId, isForeground,
-                        AppSettings.CurrentActivityId);
+                    records.Add(new TimeRecordData
+                    {
+                        ProcessName = kvp.Key,
+                        WindowTitle = kvp.Value.WindowTitle,
+                        UsageTime = kvp.Value.UsageTime,
+                        Date = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                        DeviceId = _deviceId,
+                        CategoryId = categoryId,
+                        IsForeground = isForeground,
+                        ActivityId = AppSettings.CurrentActivityId
+                    });
                 }
                 _pendingDbWrite.Clear();
+
+                if (records.Count > 0)
+                    _databaseManager.InsertTimeRecords(records);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"FlushPendingWrites error: {ex.Message}");
+                Logger.Error("FlushPendingWrites error", ex);
             }
         }
 

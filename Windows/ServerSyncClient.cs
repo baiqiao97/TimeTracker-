@@ -78,8 +78,14 @@ namespace TimeTracker
                     var existing = db.GetAllRecordKeys();
                     var toAdd = new List<TimeRecordData>();
                     foreach (var r in records)
-                        if (!existing.Contains($"{r.Date}|{r.ProcessName}|{r.DeviceId}"))
-                            toAdd.Add(r);
+                    {
+                        if (DateTime.TryParse(r.Date, out var recordDate))
+                        {
+                            var key = $"{recordDate:yyyyMMdd}|{r.ProcessName}|{r.DeviceId}";
+                            if (!existing.Contains(key))
+                                toAdd.Add(r);
+                        }
+                    }
                     if (toAdd.Count > 0) db.InsertTimeRecords(toAdd);
                 }
 

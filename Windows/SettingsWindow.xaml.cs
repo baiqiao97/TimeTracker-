@@ -170,10 +170,12 @@ namespace TimeTracker
                     autoSync = AutoSync,
                     hostServer = HostServer,
                     serverPort = ServerPort,
-                    minPasswordLength = MinPasswordLength
+                    minPasswordLength = MinPasswordLength,
+                    currentActivityId = AppSettings.CurrentActivityId,
+                    authToken = AppSettings.AuthToken
                 }, _jsonOpts));
             }
-            catch (Exception ex) { Console.WriteLine($"Failed to save settings: {ex.Message}"); }
+            catch (Exception ex) { Logger.Error("Failed to save settings", ex); }
 
             DialogResult = true;
             Close();

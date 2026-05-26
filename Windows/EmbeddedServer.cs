@@ -11,7 +11,8 @@ namespace TimeTracker
         private static HttpListener? _listener;
         private static bool _running;
         private static DatabaseManager? _db;
-        private const int MaxRequestBodySize = 1_000_000; // 1MB 限制
+        private const int MaxRequestBodySize = 1_000_000;
+        private const int TokenExpiryDays = 30;
         private static readonly Dictionary<string, (int userId, DateTime expires)> _tokens = [];
 
         private static readonly JsonSerializerOptions _json = new()
@@ -28,6 +29,7 @@ namespace TimeTracker
             _listener.Prefixes.Add($"http://127.0.0.1:{port}/");
             _listener.Start();
             _running = true;
+            Logger.Info($"EmbeddedServer started on port {port}");
             Task.Run(ListenLoop);
         }
 
@@ -37,6 +39,7 @@ namespace TimeTracker
             _tokens.Clear();
             try { _listener?.Stop(); _listener?.Close(); } catch { }
             _listener = null;
+            Logger.Info("EmbeddedServer stopped");
         }
 
         private static async Task ListenLoop()
@@ -49,11 +52,9 @@ namespace TimeTracker
                     _ = HandleRequest(ctx);
                 }
                 catch (HttpListenerException) { break; }
-                catch { }
+                catch (Exception ex) { Logger.Error("ListenLoop error", ex); }
             }
         }
-
-        // ========================== 路由处理 ==========================
 
         private static async Task HandleRequest(HttpListenerContext ctx)
         {
@@ -66,35 +67,23 @@ namespace TimeTracker
 
                 string body;
                 if (req.Url!.AbsolutePath == "/api/auth/register" && req.HttpMethod == "POST")
-                {
                     body = await HandleRegister(req);
-                }
                 else if (req.Url!.AbsolutePath == "/api/auth/login" && req.HttpMethod == "POST")
-                {
                     body = await HandleLogin(req);
-                }
                 else if (req.Url!.AbsolutePath == "/api/sync/download")
-                {
                     body = HandleSyncDownload(req);
-                }
                 else if (req.Url!.AbsolutePath == "/api/sync/upload" && req.HttpMethod == "POST")
-                {
                     body = await HandleSyncUpload(req);
-                }
                 else
-                {
                     body = JsonSerializer.Serialize(new { service = "TimeTracker Node", version = "2.0" }, _json);
-                }
 
                 var buf = Encoding.UTF8.GetBytes(body);
                 resp.ContentLength64 = buf.Length;
                 await resp.OutputStream.WriteAsync(buf.AsMemory(), CancellationToken.None);
                 resp.Close();
             }
-            catch { }
+            catch (Exception ex) { Logger.Error("HandleRequest error", ex); }
         }
-
-        // ========================== 认证端点 ==========================
 
         private static async Task<string> HandleRegister(HttpListenerRequest req)
         {
@@ -106,15 +95,14 @@ namespace TimeTracker
             if (username.Length < 6 || password.Length < 6)
                 return JsonSerializer.Serialize(new { error = "用户名和密码至少6位" }, _json);
 
-            // 检查用户名是否已存在
             var queryRow = QueryFirst("SELECT id FROM users WHERE username=@u", ("@u", username));
             if (queryRow != null)
                 return JsonSerializer.Serialize(new { error = "用户名已存在" }, _json);
 
             var token = Guid.NewGuid().ToString("N");
-            var expires = DateTime.UtcNow.AddDays(30);
+            var expires = DateTime.UtcNow.AddDays(TokenExpiryDays);
             Exec("INSERT OR IGNORE INTO users(username,password,token,expires_at,created_at) VALUES(@u,@p,@t,@e,@c)",
-                ("@u", username), ("@p", HashPwd(password)),
+                ("@u", username), ("@p", PasswordHelper.Hash(password)),
                 ("@t", token), ("@e", expires.ToString("yyyy-MM-dd HH:mm:ss")),
                 ("@c", DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss")));
 
@@ -122,6 +110,7 @@ namespace TimeTracker
             var userId = uidRow != null ? Convert.ToInt32(uidRow["id"]) : 0;
             _tokens[token] = (userId, expires);
 
+            Logger.Info($"User registered: {username} (id={userId})");
             return JsonSerializer.Serialize(new { token, expiresAt = expires, userId }, _json);
         }
 
@@ -137,7 +126,7 @@ namespace TimeTracker
             if (row == null)
                 return JsonSerializer.Serialize(new { error = "用户名或密码错误" }, _json);
 
-            if (!VerifyPwd(password, row["password"]?.ToString() ?? ""))
+            if (!PasswordHelper.Verify(password, row["password"]?.ToString() ?? ""))
                 return JsonSerializer.Serialize(new { error = "用户名或密码错误" }, _json);
 
             var token = row["token"]?.ToString();
@@ -147,17 +136,17 @@ namespace TimeTracker
                 !DateTime.TryParse(expiresStr, out var expires) || expires < DateTime.UtcNow)
             {
                 token = Guid.NewGuid().ToString("N");
-                expires = DateTime.UtcNow.AddDays(30);
+                expires = DateTime.UtcNow.AddDays(TokenExpiryDays);
                 Exec("UPDATE users SET token=@t,expires_at=@e WHERE id=@id",
                     ("@t", token), ("@e", expires.ToString("yyyy-MM-dd HH:mm:ss")),
                     ("@id", row["id"]!));
             }
 
-            _tokens[token] = (Convert.ToInt32(row["id"]), expires);
+            var uid = Convert.ToInt32(row["id"]);
+            _tokens[token] = (uid, expires);
+            Logger.Info($"User logged in: {username} (id={uid})");
             return JsonSerializer.Serialize(new { token, expiresAt = expires, userId = row["id"] }, _json);
         }
-
-        // ========================== 同步端点 ==========================
 
         private static string HandleSyncDownload(HttpListenerRequest req)
         {
@@ -167,7 +156,9 @@ namespace TimeTracker
 
             var since = req.QueryString["since"];
             var records = _db!.GetTimeRecords(
-                since != null ? DateTime.Parse(since) : DateTime.MinValue, DateTime.MaxValue);
+                since != null ? DateTime.Parse(since) : DateTime.MinValue,
+                DateTime.MaxValue,
+                auth.Value.userId);
             return JsonSerializer.Serialize(records, _json);
         }
 
@@ -182,15 +173,19 @@ namespace TimeTracker
             int count = 0;
             if (records != null)
             {
-                var existing = _db!.GetAllRecordKeys();
-                var toAdd = records.Where(r => !existing.Contains(
-                    $"{r.Date}|{r.ProcessName}|{r.DeviceId}")).ToList();
+                var existing = _db!.GetAllRecordKeys(auth.Value.userId);
+                var toAdd = records.Where(r =>
+                {
+                    if (!DateTime.TryParse(r.Date, out var recordDate)) return false;
+                    var key = $"{recordDate:yyyyMMdd}|{r.ProcessName}|{r.DeviceId}";
+                    return !existing.Contains(key);
+                }).ToList();
+
+                foreach (var r in toAdd) r.UserId = auth.Value.userId;
                 if (toAdd.Count > 0) { _db.InsertTimeRecords(toAdd); count = toAdd.Count; }
             }
             return JsonSerializer.Serialize(new { count }, _json);
         }
-
-        // ========================== 认证验证 ==========================
 
         private static (int userId, string token)? GetAuth(HttpListenerRequest req)
         {
@@ -207,7 +202,6 @@ namespace TimeTracker
                 }
                 return (entry.userId, token);
             }
-            // 回退到数据库查询
             var row = QueryFirst("SELECT id,expires_at FROM users WHERE token=@t", ("@t", token));
             if (row == null) return null;
             var expiresStr = row["expires_at"]?.ToString();
@@ -217,33 +211,6 @@ namespace TimeTracker
             _tokens[token] = (uid, expiresStr != null ? DateTime.Parse(expiresStr) : DateTime.MaxValue);
             return (uid, token);
         }
-
-        // ========================== 密码哈希 ==========================
-
-        private static string HashPwd(string pwd)
-        {
-            var bytes = Encoding.UTF8.GetBytes(pwd);
-            var salt = RandomNumberGenerator.GetBytes(16);
-            var hash = Rfc2898DeriveBytes.Pbkdf2(bytes, salt, 100_000, HashAlgorithmName.SHA256, 32);
-            return $"{Convert.ToHexString(salt)}:{Convert.ToHexString(hash)}";
-        }
-
-        private static bool VerifyPwd(string pwd, string stored)
-        {
-            var parts = stored.Split(':');
-            if (parts.Length != 2) return false;
-            try
-            {
-                var salt = Convert.FromHexString(parts[0]);
-                var expected = Convert.FromHexString(parts[1]);
-                var actual = Rfc2898DeriveBytes.Pbkdf2(
-                    Encoding.UTF8.GetBytes(pwd), salt, 100_000, HashAlgorithmName.SHA256, 32);
-                return CryptographicOperations.FixedTimeEquals(expected, actual);
-            }
-            catch { return false; }
-        }
-
-        // ========================== DB 辅助 ==========================
 
         private static string DbPath => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "time_tracker.db");
 

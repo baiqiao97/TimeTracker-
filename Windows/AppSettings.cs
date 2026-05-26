@@ -52,7 +52,10 @@ namespace TimeTracker
                     if (r.TryGetProperty("minPasswordLength", out var mpl)) MinPasswordLength = Math.Max(1, mpl.GetInt32());
                 }
             }
-            catch { /* 保持默认值 */ }
+            catch (Exception ex)
+            {
+                Logger.Error("Failed to load settings, using defaults", ex);
+            }
         }
 
         public static void Save()
@@ -78,7 +81,7 @@ namespace TimeTracker
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Failed to save settings: {ex.Message}");
+                Logger.Error("Failed to save settings", ex);
             }
         }
 

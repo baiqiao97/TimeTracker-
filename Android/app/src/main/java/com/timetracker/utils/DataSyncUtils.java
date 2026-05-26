@@ -48,21 +48,20 @@ public class DataSyncUtils {
 
     public static boolean exportData(Context context) {
         try {
-            // 获取数据库中的所有时间记录
             AppDatabase db = AppDatabase.getInstance(context);
             List<TimeRecord> records = db.timeRecordDao().getRecordsByDateRange(
                     new Date(0), new Date(System.currentTimeMillis())
             );
 
-            // 创建导出目录和文件
             File exportDir = getExportDir(context);
             File exportFile = new File(exportDir, EXPORT_FILE);
 
-            // 序列化数据为JSON
-            Gson gson = new GsonBuilder().setPrettyPrinting().create();
+            Gson gson = new GsonBuilder()
+                    .setDateFormat("yyyy-MM-dd HH:mm:ss")
+                    .setPrettyPrinting()
+                    .create();
             String json = gson.toJson(records);
 
-            // 写入文件
             FileWriter writer = new FileWriter(exportFile);
             writer.write(json);
             writer.close();
@@ -85,7 +84,9 @@ public class DataSyncUtils {
             }
 
             // 反序列化JSON数据
-            Gson gson = new Gson();
+            Gson gson = new GsonBuilder()
+                    .setDateFormat("yyyy-MM-dd HH:mm:ss")
+                    .create();
             FileReader reader = new FileReader(exportFile);
             TimeRecord[] recordsArray = gson.fromJson(reader, TimeRecord[].class);
             reader.close();
@@ -106,9 +107,11 @@ public class DataSyncUtils {
             for (TimeRecord existing : existingRecords) {
                 cal.setTime(existing.getDate());
                 String key = existing.getPackageName() + "|"
-                        + cal.get(Calendar.DAY_OF_YEAR) + "|"
-                        + cal.get(Calendar.YEAR) + "|"
-                        + existing.getDeviceId();
+                        + String.format(Locale.US, "%04d%02d%02d",
+                            cal.get(Calendar.YEAR),
+                            cal.get(Calendar.MONTH) + 1,
+                            cal.get(Calendar.DAY_OF_MONTH))
+                        + "|" + existing.getDeviceId();
                 existingKeys.add(key);
             }
 
@@ -116,22 +119,22 @@ public class DataSyncUtils {
             for (TimeRecord record : recordsArray) {
                 cal.setTime(record.getDate());
                 String key = record.getPackageName() + "|"
-                        + cal.get(Calendar.DAY_OF_YEAR) + "|"
-                        + cal.get(Calendar.YEAR) + "|"
-                        + record.getDeviceId();
+                        + String.format(Locale.US, "%04d%02d%02d",
+                            cal.get(Calendar.YEAR),
+                            cal.get(Calendar.MONTH) + 1,
+                            cal.get(Calendar.DAY_OF_MONTH))
+                        + "|" + record.getDeviceId();
                 if (!existingKeys.contains(key)) {
                     toInsert.add(record);
                 }
             }
 
             // 执行批量插入
-            int inserted = 0;
-            for (TimeRecord record : toInsert) {
-                db.timeRecordDao().insert(record);
-                inserted++;
-            }
-
+            int inserted = toInsert.size();
             int skipped = recordsArray.length - inserted;
+            if (inserted > 0) {
+                db.timeRecordDao().insertAll(toInsert);
+            }
             Log.d(TAG, "Data imported: " + inserted + " records, skipped " + skipped + " duplicates");
             return true;
         } catch (IOException e) {
@@ -142,19 +145,22 @@ public class DataSyncUtils {
 
     public static boolean syncData(Context context) {
         try {
-            // 先导出本地数据
             boolean exportSuccess = exportData(context);
             if (!exportSuccess) {
                 Log.e(TAG, "Failed to export local data for sync");
                 return false;
             }
 
-            // 然后导入外部数据（合并其他设备的数据）
             boolean importSuccess = importData(context);
             if (importSuccess) {
-                Log.d(TAG, "Data synced successfully");
+                Log.d(TAG, "Data synced successfully (local)");
             } else {
                 Log.w(TAG, "No new data to import (may have no other device data)");
+            }
+
+            if (!AppSettings.getServerUrl(context).isEmpty()
+                    || !AppSettings.getAuthToken(context).isEmpty()) {
+                ServerSyncClient.sync(context);
             }
 
             return true;

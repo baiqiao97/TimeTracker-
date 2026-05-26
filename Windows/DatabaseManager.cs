@@ -9,8 +9,9 @@ namespace TimeTracker
         private readonly object _initLock = new();
         private bool _initialized;
 
-        // 统一的日期格式（固定宽度ISO 8601风格，确保字符串比较=时间比较）
         private const string DateFormat = "yyyy-MM-dd HH:mm:ss";
+        public const int MaxSyncLimit = 10000;
+        public const int DefaultRetentionDays = 90;
 
         public DatabaseManager(string dbPath = "time_tracker.db")
         {
@@ -35,10 +36,9 @@ namespace TimeTracker
                 using var syncCmd = new SQLiteCommand("PRAGMA synchronous=NORMAL;", connection);
                 syncCmd.ExecuteNonQuery();
 
-                // 逐条执行建表语句（避免多语句合并失败）
                 string[] tables = [
                     "CREATE TABLE IF NOT EXISTS categories (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, color TEXT DEFAULT '#3498db', description TEXT DEFAULT '')",
-                    "CREATE TABLE IF NOT EXISTS time_records (id INTEGER PRIMARY KEY AUTOINCREMENT, process_name TEXT NOT NULL, window_title TEXT, usage_time INTEGER NOT NULL, date TEXT NOT NULL, device_id TEXT NOT NULL, category_id INTEGER DEFAULT NULL, is_foreground INTEGER DEFAULT 1, activity_id INTEGER DEFAULT NULL)",
+                    "CREATE TABLE IF NOT EXISTS time_records (id INTEGER PRIMARY KEY AUTOINCREMENT, process_name TEXT NOT NULL, window_title TEXT, usage_time INTEGER NOT NULL, date TEXT NOT NULL, device_id TEXT NOT NULL, category_id INTEGER DEFAULT NULL, is_foreground INTEGER DEFAULT 1, activity_id INTEGER DEFAULT NULL, user_id INTEGER DEFAULT NULL)",
                     "CREATE TABLE IF NOT EXISTS devices (device_id TEXT PRIMARY KEY, device_name TEXT NOT NULL, platform TEXT NOT NULL, last_sync TEXT)",
                     "CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, device_id TEXT NOT NULL)",
                     "CREATE TABLE IF NOT EXISTS activities (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, color TEXT DEFAULT '#6c5ce7', icon TEXT DEFAULT '📌')"
@@ -50,11 +50,15 @@ namespace TimeTracker
                     cmd.ExecuteNonQuery();
                 }
 
-                // 兼容旧库：添加 activity_id 列
                 try {
                     using var alterCmd = new SQLiteCommand("ALTER TABLE time_records ADD COLUMN activity_id INTEGER DEFAULT NULL", connection);
                     alterCmd.ExecuteNonQuery();
-                } catch { /* 列已存在 */ }
+                } catch { }
+
+                try {
+                    using var alterCmd = new SQLiteCommand("ALTER TABLE time_records ADD COLUMN user_id INTEGER DEFAULT NULL", connection);
+                    alterCmd.ExecuteNonQuery();
+                } catch { }
             }
         }
 
@@ -66,11 +70,11 @@ namespace TimeTracker
         }
 
         public void InsertTimeRecord(string processName, string windowTitle, long usageTime,
-            string deviceId, int? categoryId = null, bool isForeground = true, int? activityId = null)
+            string deviceId, int? categoryId = null, bool isForeground = true, int? activityId = null, int? userId = null)
         {
             const string insertQuery = @"
-                INSERT INTO time_records (process_name, window_title, usage_time, date, device_id, category_id, is_foreground, activity_id)
-                VALUES (@processName, @windowTitle, @usageTime, @date, @deviceId, @categoryId, @isForeground, @activityId)
+                INSERT INTO time_records (process_name, window_title, usage_time, date, device_id, category_id, is_foreground, activity_id, user_id)
+                VALUES (@processName, @windowTitle, @usageTime, @date, @deviceId, @categoryId, @isForeground, @activityId, @userId)
             ";
 
             using var connection = CreateConnection();
@@ -83,6 +87,7 @@ namespace TimeTracker
             command.Parameters.AddWithValue("@categoryId", categoryId.HasValue ? categoryId.Value : DBNull.Value);
             command.Parameters.AddWithValue("@isForeground", isForeground ? 1 : 0);
             command.Parameters.AddWithValue("@activityId", activityId.HasValue ? activityId.Value : DBNull.Value);
+            command.Parameters.AddWithValue("@userId", userId.HasValue ? userId.Value : DBNull.Value);
             command.ExecuteNonQuery();
         }
 
@@ -93,8 +98,8 @@ namespace TimeTracker
             try
             {
                 const string insertQuery = @"
-                    INSERT INTO time_records (process_name, window_title, usage_time, date, device_id, category_id, is_foreground, activity_id)
-                    VALUES (@processName, @windowTitle, @usageTime, @date, @deviceId, @categoryId, @isForeground, @activityId)
+                    INSERT INTO time_records (process_name, window_title, usage_time, date, device_id, category_id, is_foreground, activity_id, user_id)
+                    VALUES (@processName, @windowTitle, @usageTime, @date, @deviceId, @categoryId, @isForeground, @activityId, @userId)
                 ";
 
                 using var command = new SQLiteCommand(insertQuery, connection, transaction);
@@ -109,6 +114,7 @@ namespace TimeTracker
                     command.Parameters.AddWithValue("@categoryId", r.CategoryId.HasValue ? r.CategoryId.Value : DBNull.Value);
                     command.Parameters.AddWithValue("@isForeground", r.IsForeground ? 1 : 0);
                     command.Parameters.AddWithValue("@activityId", r.ActivityId.HasValue ? r.ActivityId.Value : DBNull.Value);
+                    command.Parameters.AddWithValue("@userId", r.UserId.HasValue ? r.UserId.Value : DBNull.Value);
                     command.ExecuteNonQuery();
                 }
                 transaction.Commit();
@@ -264,21 +270,23 @@ namespace TimeTracker
             return result;
         }
 
-        public List<TimeRecordData> GetTimeRecords(DateTime startDate, DateTime endDate)
+        public List<TimeRecordData> GetTimeRecords(DateTime startDate, DateTime endDate, int? userId = null)
         {
             var records = new List<TimeRecordData>();
-            const string query = @"
+            var query = @"
                 SELECT tr.*, c.name as category_name, c.color as category_color
                 FROM time_records tr
                 LEFT JOIN categories c ON tr.category_id = c.id
                 WHERE tr.date BETWEEN @startDate AND @endDate
-                ORDER BY tr.date DESC
             ";
+            if (userId.HasValue) query += " AND tr.user_id = @userId ";
+            query += "ORDER BY tr.date DESC";
 
             using var connection = CreateConnection();
             using var command = new SQLiteCommand(query, connection);
             command.Parameters.AddWithValue("@startDate", startDate.ToString(DateFormat));
             command.Parameters.AddWithValue("@endDate", endDate.ToString(DateFormat));
+            if (userId.HasValue) command.Parameters.AddWithValue("@userId", userId.Value);
             using var reader = command.ExecuteReader();
             while (reader.Read())
             {
@@ -415,14 +423,16 @@ namespace TimeTracker
         }
 
         /// <summary>
-        /// 批量获取现有记录的去重键，用于导入去重
+        /// 批量获取现有记录的去重键，用于导入去重。统一使用 yyyyMMdd|进程名|设备ID 格式
         /// </summary>
-        public HashSet<string> GetAllRecordKeys()
+        public HashSet<string> GetAllRecordKeys(int? userId = null)
         {
             var keys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            const string query = "SELECT date, process_name, device_id FROM time_records";
+            var query = "SELECT date, process_name, device_id FROM time_records";
+            if (userId.HasValue) query += " WHERE user_id = @userId";
             using var connection = CreateConnection();
             using var command = new SQLiteCommand(query, connection);
+            if (userId.HasValue) command.Parameters.AddWithValue("@userId", userId.Value);
             using var reader = command.ExecuteReader();
             while (reader.Read())
             {
@@ -468,6 +478,9 @@ namespace TimeTracker
                 IsForeground = Convert.ToInt32(reader["is_foreground"]) == 1,
                 CategoryName = reader["category_name"] != DBNull.Value
                     ? reader["category_name"].ToString()!
+                    : null,
+                UserId = reader["user_id"] != DBNull.Value
+                    ? Convert.ToInt32(reader["user_id"])
                     : null
             };
         }
@@ -484,6 +497,7 @@ namespace TimeTracker
         public int? CategoryId { get; set; }
         public bool IsForeground { get; set; }
         public int? ActivityId { get; set; }
+        public int? UserId { get; set; }
         public string? CategoryName { get; set; }
     }
 

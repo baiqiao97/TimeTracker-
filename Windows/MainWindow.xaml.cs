@@ -24,8 +24,8 @@ namespace TimeTracker
             NavOverview_Click(null!, null!);
             SetupStartupAnimation();
             RefreshActivitySelector();
-            try { SetupTrayIcon(); } catch { }
-            try { AppSettings.ApplyAutoStart(); } catch { }
+            try { SetupTrayIcon(); } catch (Exception ex) { Logger.Error("Failed to setup tray icon", ex); }
+            try { AppSettings.ApplyAutoStart(); } catch (Exception ex) { Logger.Error("Failed to apply autostart", ex); }
             SetupServerAndSync();
         }
 
@@ -213,10 +213,7 @@ namespace TimeTracker
             await Task.Delay(220);
             popup.Close();
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Notification failed: {ex.Message}");
-            }
+            catch (Exception ex) { Logger.Error("Notification failed", ex); }
         }
 
         // ======================== INIT ========================
@@ -246,7 +243,7 @@ namespace TimeTracker
                     _databaseManager.AddCategory("其他", "#f39c12", "其他应用");
                 }
             }
-            catch (Exception ex) { Console.WriteLine($"Error: {ex.Message}"); }
+            catch (Exception ex) { Logger.Error("InitializeDefaultCategories error", ex); }
         }
 
         private void InitializeTracking()
@@ -473,7 +470,7 @@ namespace TimeTracker
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"LoadStats error: {ex.Message}");
+                Logger.Error("LoadStats error", ex);
                 Dispatcher.Invoke(() =>
                 {
                     lblTotalTime.Text = "--";

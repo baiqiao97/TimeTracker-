@@ -1,6 +1,8 @@
 using Microsoft.Data.Sqlite;
+using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.WebHost.UseUrls("http://0.0.0.0:5080");
@@ -9,19 +11,65 @@ var app = builder.Build();
 var dbPath = Path.Combine(AppContext.BaseDirectory, "timetracker.db");
 InitDb(dbPath);
 
+// ===== 常量 =====
+const int TokenExpiryDays = 30;
+const int MinPasswordLength = 6;
+const int MaxSyncLimit = 10000;
+const int RateLimitPerMinute = 30;
+const int AuthRateLimitPerMinute = 6;
+
+// ===== 限流 =====
+var rateLimitStore = new ConcurrentDictionary<string, (int count, DateTime window)>();
+
+string? CheckRateLimit(HttpRequest req, int maxPerMinute)
+{
+    var ip = req.HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+    var key = $"{ip}:{req.Path}";
+    var now = DateTime.UtcNow;
+
+    var entry = rateLimitStore.AddOrUpdate(key,
+        _ => (1, now.AddMinutes(1)),
+        (_, existing) =>
+        {
+            if (existing.window < now)
+                return (1, now.AddMinutes(1));
+            return (existing.count + 1, existing.window);
+        });
+
+    if (entry.count > maxPerMinute)
+        return JsonSerializer.Serialize(new { error = "请求频率过高，请稍后再试" });
+
+    return null;
+}
+
+app.Use(async (context, next) =>
+{
+    var path = context.Request.Path.Value ?? "";
+    int limit = path.StartsWith("/api/auth") ? AuthRateLimitPerMinute : RateLimitPerMinute;
+    var rateError = CheckRateLimit(context.Request, limit);
+    if (rateError != null)
+    {
+        context.Response.StatusCode = 429;
+        context.Response.ContentType = "application/json; charset=utf-8";
+        await context.Response.WriteAsync(rateError);
+        return;
+    }
+    await next();
+});
+
 // ===== 认证 =====
 
 app.MapPost("/api/auth/register", (AuthReq req) =>
 {
-    if (string.IsNullOrWhiteSpace(req.Username) || req.Username.Length < 6
-        || string.IsNullOrWhiteSpace(req.Password) || req.Password.Length < 6)
-        return Results.BadRequest(new { error = "用户名和密码至少6位" });
+    if (string.IsNullOrWhiteSpace(req.Username) || req.Username.Length < MinPasswordLength
+        || string.IsNullOrWhiteSpace(req.Password) || req.Password.Length < MinPasswordLength)
+        return Results.BadRequest(new { error = $"用户名和密码至少{MinPasswordLength}位" });
     var existing = QueryFirst(dbPath, "SELECT id FROM users WHERE username=@u", ("@u", req.Username));
     if (existing != null)
         return Results.Conflict(new { error = "用户名已存在" });
 
     var token = Guid.NewGuid().ToString("N");
-    var expires = DateTime.UtcNow.AddDays(30).ToString("yyyy-MM-dd HH:mm:ss");
+    var expires = DateTime.UtcNow.AddDays(TokenExpiryDays).ToString("yyyy-MM-dd HH:mm:ss");
     Exec(dbPath, "INSERT INTO users(username,password,token,expires_at,created_at) VALUES(@u,@p,@t,@e,@c)",
         ("@u", req.Username), ("@p", Hash(req.Password)),
         ("@t", token), ("@e", expires), ("@c", DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss")));
@@ -36,14 +84,13 @@ app.MapPost("/api/auth/login", (AuthReq req) =>
     if (row == null) return Results.Unauthorized();
     if (!VerifyHash(req.Password, row["password"]?.ToString() ?? ""))
         return Results.Unauthorized();
-    // 若 token 已过期则重新生成
     var token = row["token"]?.ToString();
     var expiresStr = row["expires_at"]?.ToString();
     if (string.IsNullOrEmpty(token) || (expiresStr != null && DateTime.Parse(expiresStr) < DateTime.UtcNow))
     {
         token = Guid.NewGuid().ToString("N");
         Exec(dbPath, "UPDATE users SET token=@t,expires_at=@e WHERE id=@id",
-            ("@t", token), ("@e", DateTime.UtcNow.AddDays(30).ToString("yyyy-MM-dd HH:mm:ss")),
+            ("@t", token), ("@e", DateTime.UtcNow.AddDays(TokenExpiryDays).ToString("yyyy-MM-dd HH:mm:ss")),
             ("@id", row["id"]!));
     }
     return Results.Ok(new { token, userId = row["id"] });
@@ -59,7 +106,7 @@ app.MapGet("/api/sync/download", (HttpRequest req) =>
     var sql = "SELECT id,process_name,window_title,usage_time,date,device_id,category_id,is_foreground,activity_id FROM time_records WHERE user_id=@uid";
     var prms = new List<(string, object?)> { ("@uid", auth.Value.userId) };
     if (!string.IsNullOrEmpty(since)) { sql += " AND date > @s"; prms.Add(("@s", since)); }
-    sql += " ORDER BY date,id LIMIT 10000";
+    sql += $" ORDER BY date,id LIMIT {MaxSyncLimit}";
     return Results.Ok(Query(dbPath, sql, prms));
 });
 
@@ -110,15 +157,19 @@ static (int userId, string token)? GetAuth(string path, HttpRequest req)
     if (row == null) return null;
     var expiresStr = row["expires_at"]?.ToString();
     if (expiresStr != null && DateTime.Parse(expiresStr) < DateTime.UtcNow)
-        return null; // token 已过期
+        return null;
     return (Convert.ToInt32(row["id"]), token);
 }
+
+const int SaltSize = 16;
+const int HashSize = 32;
+const int Iterations = 100_000;
 
 static string Hash(string? pwd)
 {
     var bytes = Encoding.UTF8.GetBytes(pwd ?? "");
-    var salt = RandomNumberGenerator.GetBytes(16); // 16字节随机盐
-    var hash = Rfc2898DeriveBytes.Pbkdf2(bytes, salt, 100_000, HashAlgorithmName.SHA256, 32);
+    var salt = RandomNumberGenerator.GetBytes(SaltSize);
+    var hash = Rfc2898DeriveBytes.Pbkdf2(bytes, salt, Iterations, HashAlgorithmName.SHA256, HashSize);
     return $"{Convert.ToHexString(salt)}:{Convert.ToHexString(hash)}";
 }
 
@@ -126,11 +177,15 @@ static bool VerifyHash(string? pwd, string stored)
 {
     var parts = stored.Split(':');
     if (parts.Length != 2) return false;
-    var salt = Convert.FromHexString(parts[0]);
-    var expected = Convert.FromHexString(parts[1]);
-    var actual = Rfc2898DeriveBytes.Pbkdf2(
-        Encoding.UTF8.GetBytes(pwd ?? ""), salt, 100_000, HashAlgorithmName.SHA256, 32);
-    return CryptographicOperations.FixedTimeEquals(expected, actual);
+    try
+    {
+        var salt = Convert.FromHexString(parts[0]);
+        var expected = Convert.FromHexString(parts[1]);
+        var actual = Rfc2898DeriveBytes.Pbkdf2(
+            Encoding.UTF8.GetBytes(pwd ?? ""), salt, Iterations, HashAlgorithmName.SHA256, HashSize);
+        return CryptographicOperations.FixedTimeEquals(expected, actual);
+    }
+    catch { return false; }
 }
 
 static int Exec(string path, string sql, params (string, object?)[] prms)
