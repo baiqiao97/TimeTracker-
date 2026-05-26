@@ -1346,8 +1346,8 @@ namespace TimeTracker
             barChartCanvas.Children.Clear();
             if (data.Count == 0) return;
 
-            double canvasW = barChartCanvas.ActualWidth > 0 ? barChartCanvas.ActualWidth : 380;
-            double canvasH = 220;
+            double canvasW = Math.Max(barChartCanvas.ActualWidth, 300);
+            double canvasH = Math.Max(barChartCanvas.ActualHeight, 180);
             double barAreaL = 80, barAreaR = 20, barAreaT = 10, barAreaB = 30;
             double chartW = canvasW - barAreaL - barAreaR;
             double chartH = canvasH - barAreaT - barAreaB;
@@ -1418,8 +1418,11 @@ namespace TimeTracker
             pieChartCanvas.Children.Clear();
             if (data.Count == 0) return;
 
-            double cx = pieChartCanvas.ActualWidth > 0 ? pieChartCanvas.ActualWidth / 2 : 180;
-            double cy = 100, radius = 85;
+            double pieW = Math.Max(pieChartCanvas.ActualWidth, 300);
+            double pieH = Math.Max(pieChartCanvas.ActualHeight, 180);
+            double cx = pieW / 2;
+            double cy = pieH * 0.45;
+            double radius = Math.Min(pieW, pieH) * 0.38;
             var totalMs = data.Sum(d => d.TotalUsage);
             if (totalMs == 0) return;
 
