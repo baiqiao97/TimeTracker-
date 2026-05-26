@@ -100,7 +100,7 @@ namespace TimeTracker
 
         public void TogglePause()
         {
-            if (_isPaused) Resume();
+            if (IsPaused) Resume();
             else Pause();
         }
 

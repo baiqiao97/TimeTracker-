@@ -304,11 +304,24 @@
 
                 <!-- Header -->
                 <Grid Grid.Row="0" Margin="0,4,0,16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
                     <StackPanel>
                         <TextBlock x:Name="lblPageTitle" Text="概览" FontSize="26" FontWeight="Bold"
                                    Foreground="{StaticResource TextPrimary}"/>
                         <TextBlock x:Name="lblPageSubtitle" Text="今日应用使用总览"
                                    FontSize="13" Foreground="{StaticResource TextSecondary}" Margin="0,3,0,0"/>
+                    </StackPanel>
+                    <StackPanel x:Name="activityPanel" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top" Visibility="Collapsed">
+                        <ComboBox x:Name="cmbActivity" Width="130" Height="34" FontSize="12"
+                                  VerticalContentAlignment="Center" Padding="10,0"
+                                  SelectionChanged="CmbActivity_Changed" ToolTip="切换当前活动"/>
+                        <Button x:Name="btnAddActivity" Content="+" Width="30" Height="30" FontSize="16"
+                                Background="Transparent" BorderThickness="0" Foreground="#6b7280"
+                                Cursor="Hand" ToolTip="新建活动" Click="BtnAddActivity_Click" Margin="4,0,0,0"
+                                FocusVisualStyle="{x:Null}"/>
                     </StackPanel>
                 </Grid>
 
