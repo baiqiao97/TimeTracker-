@@ -168,6 +168,161 @@
             </Setter>
         </Style>
 
+        <Style TargetType="Button" x:Key="PrioBtn">
+            <Setter Property="Background" Value="#f3f4f6"/>
+            <Setter Property="Foreground" Value="#6b7280"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Width" Value="38"/>
+            <Setter Property="Height" Value="38"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="#f3f4f6" CornerRadius="10"
+                                Padding="0" BorderThickness="2" BorderBrush="Transparent">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#e8e4ff"/>
+                                <Setter Property="Foreground" Value="#6c5ce7"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="Button" x:Key="PrioBtnHigh" BasedOn="{StaticResource PrioBtn}">
+            <Setter Property="Background" Value="#fef2f2"/>
+            <Setter Property="Foreground" Value="#ef4444"/>
+        </Style>
+        <Style TargetType="Button" x:Key="PrioBtnMid" BasedOn="{StaticResource PrioBtn}">
+            <Setter Property="Background" Value="#fffbeb"/>
+            <Setter Property="Foreground" Value="#f59e0b"/>
+        </Style>
+        <Style TargetType="Button" x:Key="PrioBtnLow" BasedOn="{StaticResource PrioBtn}">
+            <Setter Property="Background" Value="#ecfdf5"/>
+            <Setter Property="Foreground" Value="#10b981"/>
+        </Style>
+
+        <Style TargetType="Button" x:Key="PrioBtnHighActive" BasedOn="{StaticResource PrioBtnHigh}">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="#fef2f2" CornerRadius="10"
+                                Padding="0" BorderThickness="2" BorderBrush="#ef4444">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style TargetType="Button" x:Key="PrioBtnMidActive" BasedOn="{StaticResource PrioBtnMid}">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="#fffbeb" CornerRadius="10"
+                                Padding="0" BorderThickness="2" BorderBrush="#f59e0b">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style TargetType="Button" x:Key="PrioBtnLowActive" BasedOn="{StaticResource PrioBtnLow}">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="#ecfdf5" CornerRadius="10"
+                                Padding="0" BorderThickness="2" BorderBrush="#10b981">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="Button" x:Key="ColorPickerBtn">
+            <Setter Property="Width" Value="30"/>
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Margin" Value="0,0,2,0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid>
+                            <Border x:Name="ring" CornerRadius="15" BorderThickness="2"
+                                    BorderBrush="Transparent" Background="Transparent"
+                                    Width="28" Height="28"/>
+                            <Border x:Name="dot" CornerRadius="9" Width="18" Height="18"
+                                    Background="{TemplateBinding Tag}"
+                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ring" Property="BorderBrush"
+                                        Value="{Binding Background, ElementName=dot}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="Button" x:Key="ColorPickerBtnSelected" BasedOn="{StaticResource ColorPickerBtn}">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid>
+                            <Border x:Name="ring" CornerRadius="15" BorderThickness="2"
+                                    BorderBrush="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"
+                                    Background="Transparent" Width="28" Height="28"/>
+                            <Border x:Name="dot" CornerRadius="9" Width="18" Height="18"
+                                    Background="{TemplateBinding Tag}"
+                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="Button" x:Key="DateBtn">
+            <Setter Property="Background" Value="#f3f4f6"/>
+            <Setter Property="Foreground" Value="#6b7280"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Height" Value="38"/>
+            <Setter Property="Padding" Value="14,0"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="#f3f4f6" CornerRadius="10"
+                                Padding="{TemplateBinding Padding}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock x:Name="txt" Text="选择日期" VerticalAlignment="Center"
+                                           Foreground="#6b7280"/>
+                                <TextBlock Text="📅" FontSize="14" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#e8e4ff"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <!-- DataGrid -->
         <Style TargetType="DataGrid">
             <Setter Property="Background" Value="Transparent"/>
@@ -528,12 +683,14 @@
                                      VerticalContentAlignment="Center" Padding="12,0"
                                      BorderBrush="#e5e7eb" BorderThickness="1"
                                      ToolTip="输入新待办事项" Margin="0,0,8,0"/>
-                            <ComboBox x:Name="cmbTodoPriority" Width="80" Height="38" Margin="0,0,8,0"
-                                      SelectedIndex="1">
-                                <ComboBoxItem Content="🔴 高"/>
-                                <ComboBoxItem Content="🟡 中"/>
-                                <ComboBoxItem Content="🟢 低"/>
-                            </ComboBox>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,10,0">
+                                <Button x:Name="btnPrioHigh" Content="高" Style="{StaticResource PrioBtnHigh}" Tag="2"
+                                        Click="Priority_Click"/>
+                                <Button x:Name="btnPrioMid" Content="中" Style="{StaticResource PrioBtnMidActive}" Tag="1"
+                                        Click="Priority_Click"/>
+                                <Button x:Name="btnPrioLow" Content="低" Style="{StaticResource PrioBtnLow}" Tag="0"
+                                        Click="Priority_Click"/>
+                            </StackPanel>
                             <Button Content="添加" Style="{StaticResource PrimaryBtn}" Click="TodoAdd_Click"/>
                         </StackPanel>
                         <WrapPanel Grid.Row="1" Orientation="Horizontal" Margin="0,8,0,12">
@@ -553,26 +710,33 @@
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
                         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,12">
-                            <TextBox x:Name="txtScheduleTitle" Width="200" Height="38" FontSize="13"
+                            <TextBox x:Name="txtScheduleTitle" Width="180" Height="38" FontSize="13"
                                      VerticalContentAlignment="Center" Padding="12,0"
                                      BorderBrush="#e5e7eb" BorderThickness="1"
                                      Margin="0,0,8,0" ToolTip="日程标题"/>
-                            <DatePicker x:Name="dpScheduleDate" Width="140" Height="38"
-                                        VerticalContentAlignment="Center" Margin="0,0,8,0"/>
-                            <TextBox x:Name="txtScheduleTime" Width="190" Height="38" FontSize="12"
+                            <Button x:Name="btnDatePicker" Width="150" Height="38"
+                                    Style="{StaticResource DateBtn}" Margin="0,0,8,0" Click="DatePickerBtn_Click"/>
+                            <DatePicker x:Name="dpScheduleDate" Visibility="Collapsed"
+                                        SelectedDateChanged="DatePicker_Changed"/>
+                            <TextBox x:Name="txtScheduleTime" Width="170" Height="38" FontSize="12"
                                      VerticalContentAlignment="Center" Padding="8,0"
                                      BorderBrush="#e5e7eb" BorderThickness="1"
                                      Margin="0,0,8,0" Text="08:00 - 10:00" ToolTip="开始-结束时间"/>
                             <CheckBox x:Name="chkAllDay" Content="全天" VerticalAlignment="Center" FontSize="12"
-                                      Margin="0,0,8,0"/>
-                            <ComboBox x:Name="cmbScheduleColor" Width="70" Height="38" Margin="0,0,8,0"
-                                      SelectedIndex="0">
-                                <ComboBoxItem Content="#6c5ce7"/>
-                                <ComboBoxItem Content="#10b981"/>
-                                <ComboBoxItem Content="#f59e0b"/>
-                                <ComboBoxItem Content="#ef4444"/>
-                                <ComboBoxItem Content="#3b82f6"/>
-                            </ComboBox>
+                                      Margin="0,0,10,0"/>
+                            <StackPanel x:Name="colorPickerGroup" Orientation="Horizontal" Margin="0,0,10,0"
+                                        VerticalAlignment="Center">
+                                <Button x:Name="btnColor1" Tag="#6c5ce7" Click="Color_Click"
+                                        Style="{StaticResource ColorPickerBtnSelected}"/>
+                                <Button x:Name="btnColor2" Tag="#10b981" Click="Color_Click"
+                                        Style="{StaticResource ColorPickerBtn}"/>
+                                <Button x:Name="btnColor3" Tag="#f59e0b" Click="Color_Click"
+                                        Style="{StaticResource ColorPickerBtn}"/>
+                                <Button x:Name="btnColor4" Tag="#ef4444" Click="Color_Click"
+                                        Style="{StaticResource ColorPickerBtn}"/>
+                                <Button x:Name="btnColor5" Tag="#3b82f6" Click="Color_Click"
+                                        Style="{StaticResource ColorPickerBtn}"/>
+                            </StackPanel>
                             <Button Content="添加" Style="{StaticResource PrimaryBtn}" Click="ScheduleAdd_Click"/>
                         </StackPanel>
                         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">

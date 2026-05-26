@@ -14,6 +14,9 @@ namespace TimeTracker
         private readonly DatabaseManager _databaseManager;
         private string _currentRange = "daily";
         private string _todoFilter = "all";
+        private int _selectedPriority = 1;
+        private string _selectedColor = "#6c5ce7";
+        private DateTime? _selectedDate;
 
         public MainWindow()
         {
@@ -1602,11 +1605,20 @@ namespace TimeTracker
             var title = txtTodoTitle.Text.Trim();
             if (string.IsNullOrEmpty(title)) return;
 
-            var priority = cmbTodoPriority.SelectedIndex switch { 0 => 2, 2 => 0, _ => 1 };
-
-            _databaseManager.InsertTodo(title, "", priority, null, DeviceId);
+            _databaseManager.InsertTodo(title, "", _selectedPriority, null, DeviceId);
             txtTodoTitle.Clear();
             LoadTodoItems();
+        }
+
+        private void Priority_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.Tag is string tagStr && int.TryParse(tagStr, out var pri))
+            {
+                _selectedPriority = pri;
+            }
+            btnPrioHigh.Style = (Style)FindResource(_selectedPriority == 2 ? "PrioBtnHighActive" : "PrioBtnHigh");
+            btnPrioMid.Style = (Style)FindResource(_selectedPriority == 1 ? "PrioBtnMidActive" : "PrioBtnMid");
+            btnPrioLow.Style = (Style)FindResource(_selectedPriority == 0 ? "PrioBtnLowActive" : "PrioBtnLow");
         }
 
         private void TodoFilterAll_Click(object sender, RoutedEventArgs e)
@@ -1742,7 +1754,7 @@ namespace TimeTracker
             var title = txtScheduleTitle.Text.Trim();
             if (string.IsNullOrEmpty(title)) return;
 
-            var date = dpScheduleDate.SelectedDate ?? DateTime.Today;
+            var date = _selectedDate ?? DateTime.Today;
             var isAllDay = chkAllDay.IsChecked == true;
 
             string startTime;
@@ -1779,17 +1791,77 @@ namespace TimeTracker
                 }
             }
 
-            var selectedColor = cmbScheduleColor.SelectedItem is ComboBoxItem cbi
-                ? cbi.Content?.ToString() ?? "#6c5ce7"
-                : "#6c5ce7";
-
-            _databaseManager.InsertSchedule(title, "", startTime, endTime, isAllDay, selectedColor, DeviceId);
+            _databaseManager.InsertSchedule(title, "", startTime, endTime, isAllDay, _selectedColor, DeviceId);
             txtScheduleTitle.Clear();
             txtScheduleTime.Text = "08:00 - 10:00";
-            dpScheduleDate.SelectedDate = null;
+            _selectedDate = null;
+            UpdateDateButton(_selectedDate);
             chkAllDay.IsChecked = false;
-            cmbScheduleColor.SelectedIndex = 0;
             LoadSchedules();
+        }
+
+        private void DatePickerBtn_Click(object sender, RoutedEventArgs e)
+        {
+            var win = new Window
+            {
+                Title = "选择日期",
+                Width = 260,
+                Height = 280,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                Owner = this,
+                ResizeMode = ResizeMode.NoResize,
+                WindowStyle = WindowStyle.ToolWindow,
+                Content = new System.Windows.Controls.Calendar
+                {
+                    SelectedDate = _selectedDate ?? DateTime.Today,
+                    DisplayMode = CalendarMode.Month,
+                    IsTodayHighlighted = true,
+                    Margin = new Thickness(10)
+                }
+            };
+            var cal = (System.Windows.Controls.Calendar)win.Content;
+            cal.SelectedDatesChanged += (s, ev) =>
+            {
+                _selectedDate = cal.SelectedDate;
+                UpdateDateButton(_selectedDate);
+                win.Close();
+            };
+            win.ShowDialog();
+        }
+
+        private void DatePicker_Changed(object sender, SelectionChangedEventArgs e)
+        {
+            if (dpScheduleDate.SelectedDate.HasValue)
+            {
+                _selectedDate = dpScheduleDate.SelectedDate.Value;
+                UpdateDateButton(_selectedDate);
+            }
+        }
+
+        private void UpdateDateButton(DateTime? date)
+        {
+            var template = btnDatePicker.Template;
+            var txt = template?.FindName("txt", btnDatePicker) as TextBlock;
+            if (txt != null)
+            {
+                txt.Text = date?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? "选择日期";
+                txt.Foreground = date.HasValue
+                    ? new SolidColorBrush(Color.FromRgb(0x1a, 0x1d, 0x2e))
+                    : new SolidColorBrush(Color.FromRgb(0x6b, 0x72, 0x80));
+            }
+        }
+
+        private void Color_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.Tag is string color)
+            {
+                _selectedColor = color;
+                foreach (Button child in colorPickerGroup.Children)
+                {
+                    child.Style = (Style)FindResource(
+                        child.Tag?.ToString() == _selectedColor ? "ColorPickerBtnSelected" : "ColorPickerBtn");
+                }
+            }
         }
 
         private void LoadSchedules()
