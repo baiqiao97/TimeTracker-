@@ -51,6 +51,87 @@ dotnet run
 
 服务端默认监听 `http://localhost:5080`。在设置中配置服务端地址即可启用跨设备同步。
 
+## 部署服务端
+
+### 方式一：Docker（推荐）
+
+```bash
+cd Server
+docker build -t timetracker-server .
+docker run -d -p 5080:5080 --restart always --name timetracker timetracker-server
+```
+
+### 方式二：Linux VPS 手动部署
+
+```bash
+# 安装 .NET Runtime
+wget https://dot.net/v1/dotnet-install.sh
+chmod +x dotnet-install.sh
+./dotnet-install.sh --channel 8.0 --runtime aspnetcore
+
+# 上传发布包
+scp -r publish/ user@your-server:/opt/timetracker/
+
+# 启动服务端
+cd /opt/timetracker
+nohup dotnet TimeTrackerServer.dll --urls "http://0.0.0.0:5080" > server.log 2>&1 &
+```
+
+### 方式三：发布为可执行文件
+
+```bash
+cd Server
+
+# Windows
+dotnet publish -c Release -r win-x64 --self-contained -o publish/win
+
+# Linux
+dotnet publish -c Release -r linux-x64 --self-contained -o publish/linux
+
+# 运行
+./publish/linux/TimeTrackerServer
+```
+
+### 配置 systemd 服务（Linux）
+
+```ini
+# /etc/systemd/system/timetracker.service
+[Unit]
+Description=TimeTracker Server
+After=network.target
+
+[Service]
+WorkingDirectory=/opt/timetracker
+ExecStart=/opt/timetracker/TimeTrackerServer --urls "http://0.0.0.0:5080"
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+sudo systemctl enable timetracker --now
+```
+
+### 配置 Nginx 反向代理（可选 HTTPS）
+
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;
+
+    location / {
+        proxy_pass http://127.0.0.1:5080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+}
+```
+
+服务端部署后，在客户端设置中填写 `http://你的服务器IP:5080` 即可连接。
+
 ## 同步模式
 
 | 模式 | 说明 |
