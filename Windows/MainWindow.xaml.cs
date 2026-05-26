@@ -1076,18 +1076,21 @@ namespace TimeTracker
                 Background = Brushes.White, WindowStyle = WindowStyle.ToolWindow };
             var sp = new StackPanel { Margin = new Thickness(16, 12, 16, 12) };
             var tb = new TextBox { Margin = new Thickness(0, 0, 0, 8), FontSize = 13 };
-            var btn = new Button { Content = "添加", Height = 32, Background = new SolidColorBrush(Color.FromRgb(0x6c, 0x5c, 0xe7)),
-                Foreground = Brushes.White, BorderThickness = new Thickness(0), Cursor = Cursors.Hand,
-                FontSize = 13, FontWeight = FontWeights.SemiBold };
-            btn.Template = new ControlTemplate(typeof(Button)) { VisualTree =
-                new FrameworkElementFactory(typeof(Border)) };
-            ((FrameworkElementFactory)btn.Template.VisualTree).SetValue(Border.BackgroundProperty,
-                new TemplateBindingExtension(Button.BackgroundProperty));
-            ((FrameworkElementFactory)btn.Template.VisualTree).SetValue(Border.CornerRadiusProperty, new CornerRadius(6));
+
+            // 先构建 template 树，再创建 ControlTemplate
+            var borderFactory = new FrameworkElementFactory(typeof(Border));
+            borderFactory.SetValue(Border.BackgroundProperty, new TemplateBindingExtension(Button.BackgroundProperty));
+            borderFactory.SetValue(Border.CornerRadiusProperty, new CornerRadius(8));
             var cp = new FrameworkElementFactory(typeof(ContentPresenter));
             cp.SetValue(ContentPresenter.HorizontalAlignmentProperty, HorizontalAlignment.Center);
             cp.SetValue(ContentPresenter.VerticalAlignmentProperty, VerticalAlignment.Center);
-            ((FrameworkElementFactory)btn.Template.VisualTree).AppendChild(cp);
+            borderFactory.AppendChild(cp);
+
+            var btn = new Button { Content = "添加", Height = 34, Background = new SolidColorBrush(Color.FromRgb(0x6c, 0x5c, 0xe7)),
+                Foreground = Brushes.White, BorderThickness = new Thickness(0), Cursor = Cursors.Hand,
+                FontSize = 13, FontWeight = FontWeights.SemiBold };
+            btn.Template = new ControlTemplate(typeof(Button)) { VisualTree = borderFactory };
+
             sp.Children.Add(new TextBlock { Text = "活动名称:", FontSize = 12, Foreground = new SolidColorBrush(Color.FromRgb(0x6b, 0x72, 0x80)), Margin = new Thickness(0, 0, 0, 4) });
             sp.Children.Add(tb);
             sp.Children.Add(btn);
