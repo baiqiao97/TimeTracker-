@@ -354,6 +354,7 @@ namespace TimeTracker
         private void NavImport_Click(object sender, RoutedEventArgs e) => DoImport();
         private void NavExport_Click(object sender, RoutedEventArgs e) => DoExport();
         private void NavSync_Click(object sender, RoutedEventArgs e) => DoSync();
+        private void NavManageActivities_Click(object sender, RoutedEventArgs e) => ManageActivities();
         private void NavManageCategories_Click(object sender, RoutedEventArgs e) => ManageCategories();
         private void NavSettings_Click(object sender, RoutedEventArgs e) => OpenSettings();
 
@@ -978,6 +979,88 @@ namespace TimeTracker
             lblCurrentApp.Text = ok ? "同步完成" : "同步失败";
         }
 
+        private void ManageActivities()
+        {
+            var dialog = new Window { Title = "管理活动", Width = 380, Height = 420,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner, Owner = this,
+                ResizeMode = ResizeMode.CanResize, FontFamily = new FontFamily("Segoe UI, Microsoft YaHei UI"),
+                Background = new SolidColorBrush(Color.FromRgb(0xf5, 0xf6, 0xfa)) };
+            var sp = new StackPanel { Margin = new Thickness(20) };
+
+            var title = new TextBlock { Text = "管理活动", FontSize = 18, FontWeight = FontWeights.Bold,
+                Foreground = new SolidColorBrush(Color.FromRgb(0x1a, 0x1d, 0x2e)), Margin = new Thickness(0, 0, 0, 14) };
+            sp.Children.Add(title);
+
+            var lb = new ListBox { Height = 240, BorderThickness = new Thickness(0),
+                Background = Brushes.White, Margin = new Thickness(0, 0, 0, 12) };
+            lb.ItemTemplate = new DataTemplate(() =>
+            {
+                var sp2 = new StackPanel();
+                var tb = new TextBlock();
+                tb.SetBinding(TextBlock.TextProperty, new System.Windows.Data.Binding("Name"));
+                tb.FontSize = 13; tb.FontWeight = FontWeights.SemiBold;
+                sp2.Children.Add(tb);
+                return new FrameworkElementFactory(typeof(StackPanel)) == null ? null : new FrameworkElementFactory(typeof(ContentPresenter));
+            });
+            // 手动构建 ListBox ItemTemplate
+            var factory = new FrameworkElementFactory(typeof(Border));
+            factory.SetValue(Border.PaddingProperty, new Thickness(12, 8, 12, 8));
+            var textFactory = new FrameworkElementFactory(typeof(TextBlock));
+            textFactory.SetValue(TextBlock.FontSizeProperty, 13.0);
+            textFactory.SetValue(TextBlock.FontWeightProperty, FontWeights.SemiBold);
+            textFactory.SetBinding(TextBlock.TextProperty, new System.Windows.Data.Binding("Name"));
+            factory.AppendChild(textFactory);
+            lb.ItemTemplate = new DataTemplate { VisualTree = factory };
+            lb.DisplayMemberPath = "Name";
+            sp.Children.Add(lb);
+
+            var inputRow = new Grid { Margin = new Thickness(0, 0, 0, 12) };
+            inputRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            inputRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            var tbName = new TextBox { FontSize = 13, Padding = new Thickness(10, 8, 10, 8),
+                Background = Brushes.White, BorderBrush = new SolidColorBrush(Color.FromRgb(0xd1, 0xd5, 0xdb)) };
+            var btnAdd = new Button { Content = "添加", Width = 60, Height = 34, Margin = new Thickness(8, 0, 0, 0),
+                Background = new SolidColorBrush(Color.FromRgb(0x6c, 0x5c, 0xe7)), Foreground = Brushes.White,
+                FontSize = 12, FontWeight = FontWeights.SemiBold, BorderThickness = new Thickness(0), Cursor = Cursors.Hand };
+            Grid.SetColumn(tbName, 0); Grid.SetColumn(btnAdd, 1);
+            inputRow.Children.Add(tbName); inputRow.Children.Add(btnAdd);
+            sp.Children.Add(inputRow);
+
+            var btnDelete = new Button { Content = "删除选中活动", Height = 36,
+                Background = new SolidColorBrush(Color.FromRgb(0xfe, 0xf2, 0xf2)),
+                Foreground = new SolidColorBrush(Color.FromRgb(0xef, 0x44, 0x44)),
+                FontSize = 12, FontWeight = FontWeights.SemiBold, BorderThickness = new Thickness(0), Cursor = Cursors.Hand };
+            sp.Children.Add(btnDelete);
+
+            dialog.Content = sp;
+
+            void RefreshList()
+            {
+                var acts = _databaseManager.GetActivities();
+                lb.ItemsSource = null; lb.ItemsSource = acts;
+            }
+            RefreshList();
+
+            btnAdd.Click += (_, _) =>
+            {
+                var name = tbName.Text.Trim();
+                if (name.Length > 0) { _databaseManager.AddActivity(name); tbName.Text = ""; RefreshList(); RefreshActivitySelector(); }
+            };
+            tbName.KeyDown += (_, ke) => { if (ke.Key == Key.Enter) { btnAdd.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); } };
+            btnDelete.Click += (_, _) =>
+            {
+                if (lb.SelectedItem is ActivityData act)
+                {
+                    _databaseManager.DeleteActivity(act.Id);
+                    RefreshList();
+                    RefreshActivitySelector();
+                }
+            };
+
+            dialog.ShowDialog();
+            LoadStats();
+        }
+
         private void ManageCategories()
         {
             var win = new CategoryManageWindow(_databaseManager, _trackingService);
@@ -1064,6 +1147,9 @@ namespace TimeTracker
             bool active = AppSettings.TrackingMode == "activity";
             activityPanel.Visibility = active ? Visibility.Visible : Visibility.Collapsed;
             btnActivity.Visibility = active ? Visibility.Visible : Visibility.Collapsed;
+            btnCategory.Visibility = active ? Visibility.Collapsed : Visibility.Visible;
+            panelStandard.Visibility = active ? Visibility.Collapsed : Visibility.Visible;
+            panelActivity.Visibility = active ? Visibility.Visible : Visibility.Collapsed;
             if (!active) return;
 
             var acts = _databaseManager.GetActivities();

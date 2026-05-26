@@ -279,13 +279,24 @@
                         <Button x:Name="btnActivity" Content="🎯  活动统计" Style="{StaticResource SidebarBtn}" Click="NavActivity_Click" Visibility="Collapsed"/>
                     </StackPanel>
 
-                    <!-- Section: 数据 -->
-                    <StackPanel Grid.Row="2" Margin="0,16,0,0">
+                    <!-- Section: 数据 (标准模式) -->
+                    <StackPanel x:Name="panelStandard" Grid.Row="2" Margin="0,16,0,0">
                         <TextBlock Text="数据管理" FontSize="10" FontWeight="SemiBold"
                                    Foreground="#64748b" Margin="24,0,0,6" TextOptions.TextFormattingMode="Display"/>
                         <Button Content="📥  导入" Style="{StaticResource SidebarBtn}" Click="NavImport_Click"/>
                         <Button Content="📤  导出" Style="{StaticResource SidebarBtn}" Click="NavExport_Click"/>
                         <Button Content="🔄  同步" Style="{StaticResource SidebarBtn}" Click="NavSync_Click"/>
+                        <Button Content="🏷  管理标签" Style="{StaticResource SidebarBtn}" Click="NavManageCategories_Click"/>
+                    </StackPanel>
+
+                    <!-- Section: 数据 (活动模式) -->
+                    <StackPanel x:Name="panelActivity" Grid.Row="2" Margin="0,16,0,0" Visibility="Collapsed">
+                        <TextBlock Text="活动管理" FontSize="10" FontWeight="SemiBold"
+                                   Foreground="#64748b" Margin="24,0,0,6" TextOptions.TextFormattingMode="Display"/>
+                        <Button Content="📥  导入" Style="{StaticResource SidebarBtn}" Click="NavImport_Click"/>
+                        <Button Content="📤  导出" Style="{StaticResource SidebarBtn}" Click="NavExport_Click"/>
+                        <Button Content="🔄  同步" Style="{StaticResource SidebarBtn}" Click="NavSync_Click"/>
+                        <Button Content="🎯  管理活动" Style="{StaticResource SidebarBtn}" Click="NavManageActivities_Click"/>
                         <Button Content="🏷  管理标签" Style="{StaticResource SidebarBtn}" Click="NavManageCategories_Click"/>
                     </StackPanel>
 
@@ -316,29 +327,12 @@
                                    FontSize="13" Foreground="{StaticResource TextSecondary}" Margin="0,3,0,0"/>
                     </StackPanel>
                     <StackPanel x:Name="activityPanel" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top" Visibility="Collapsed">
-                        <Border Background="#f3f4f6" CornerRadius="10" Padding="2,0,0,0">
-                            <ComboBox x:Name="cmbActivity" Width="120" Height="32" FontSize="12"
+                        <Border Background="#f3f4f6" CornerRadius="10" Padding="2,0">
+                            <ComboBox x:Name="cmbActivity" Width="130" Height="32" FontSize="12"
                                       VerticalContentAlignment="Center" Padding="8,0"
                                       BorderThickness="0" Background="Transparent"
                                       SelectionChanged="CmbActivity_Changed" ToolTip="切换当前活动"/>
                         </Border>
-                        <Button x:Name="btnAddActivity" Content="+" Width="30" Height="30" FontSize="16"
-                                Background="#6c5ce7" Foreground="White" BorderThickness="0"
-                                FontWeight="Bold" Cursor="Hand" ToolTip="新建活动"
-                                Click="BtnAddActivity_Click" Margin="6,0,0,0" FocusVisualStyle="{x:Null}">
-                            <Button.Template>
-                                <ControlTemplate TargetType="Button">
-                                    <Border x:Name="bd" Background="#6c5ce7" CornerRadius="15">
-                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                    </Border>
-                                    <ControlTemplate.Triggers>
-                                        <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter TargetName="bd" Property="Background" Value="#5a4bd1"/>
-                                        </Trigger>
-                                    </ControlTemplate.Triggers>
-                                </ControlTemplate>
-                            </Button.Template>
-                        </Button>
                     </StackPanel>
                 </Grid>
 
