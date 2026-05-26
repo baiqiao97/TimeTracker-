@@ -341,6 +341,16 @@ namespace TimeTracker
             RefreshChartIfVisible();
         }
 
+        private void NavActivity_Click(object sender, RoutedEventArgs e)
+        {
+            _currentRange = "weekly";
+            SetPage("活动统计", "按活动分类查看使用时长");
+            HighlightNav(btnActivity);
+            LoadStats();
+            ShowActivityStats();
+            RefreshChartIfVisible();
+        }
+
         private void NavImport_Click(object sender, RoutedEventArgs e) => DoImport();
         private void NavExport_Click(object sender, RoutedEventArgs e) => DoExport();
         private void NavSync_Click(object sender, RoutedEventArgs e) => DoSync();
@@ -528,6 +538,23 @@ namespace TimeTracker
             {
                 CategoryName = s.CategoryName ?? "未分类",
                 UsageTime = FormatMs(s.TotalUsage)
+            }).ToList();
+
+            dataGrid.ItemsSource = data;
+            AnimateRowsIn();
+        }
+
+        private async void ShowActivityStats()
+        {
+            var (start, end) = GetDateRange();
+            SetupColumns("活动名称", "Name", "使用时长", "UsageDisplay", null, null);
+
+            var stats = await Task.Run(() => _databaseManager.GetStatsByActivity(start, end));
+            var data = stats.Select(s => new ActivityStatsItem
+            {
+                Name = s.Name,
+                Color = s.Color,
+                UsageDisplay = FormatMs(s.TotalUsage)
             }).ToList();
 
             dataGrid.ItemsSource = data;
@@ -1036,6 +1063,7 @@ namespace TimeTracker
         {
             bool active = AppSettings.TrackingMode == "activity";
             activityPanel.Visibility = active ? Visibility.Visible : Visibility.Collapsed;
+            btnActivity.Visibility = active ? Visibility.Visible : Visibility.Collapsed;
             if (!active) return;
 
             var acts = _databaseManager.GetActivities();
@@ -1480,6 +1508,13 @@ namespace TimeTracker
     {
         public string CategoryName { get; set; } = string.Empty;
         public string UsageTime { get; set; } = string.Empty;
+    }
+
+    public class ActivityStatsItem
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Color { get; set; } = "#6c5ce7";
+        public string UsageDisplay { get; set; } = string.Empty;
     }
 
     public class ForegroundStatsItem

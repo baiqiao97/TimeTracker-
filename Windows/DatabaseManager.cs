@@ -241,6 +241,29 @@ namespace TimeTracker
             return result;
         }
 
+        /// <summary>获取所有活动的使用时长汇总</summary>
+        public List<ActivityUsageData> GetStatsByActivity(DateTime start, DateTime end)
+        {
+            var result = new List<ActivityUsageData>();
+            const string query = @"SELECT a.id, a.name, a.color, COALESCE(SUM(tr.usage_time),0) as total_usage
+                FROM activities a LEFT JOIN time_records tr ON a.id=tr.activity_id AND tr.date BETWEEN @s AND @e
+                GROUP BY a.id ORDER BY total_usage DESC";
+            using var conn = CreateConnection();
+            using var cmd = new SQLiteCommand(query, conn);
+            cmd.Parameters.AddWithValue("@s", start.ToString(DateFormat));
+            cmd.Parameters.AddWithValue("@e", end.ToString(DateFormat));
+            using var r = cmd.ExecuteReader();
+            while (r.Read())
+                result.Add(new ActivityUsageData
+                {
+                    Id = Convert.ToInt32(r["id"]),
+                    Name = r["name"].ToString()!,
+                    Color = r["color"].ToString()!,
+                    TotalUsage = Convert.ToInt64(r["total_usage"])
+                });
+            return result;
+        }
+
         public List<TimeRecordData> GetTimeRecords(DateTime startDate, DateTime endDate)
         {
             var records = new List<TimeRecordData>();
@@ -496,6 +519,14 @@ namespace TimeTracker
     public class ForegroundStatsData
     {
         public string Type { get; set; } = string.Empty;
+        public long TotalUsage { get; set; }
+    }
+
+    public class ActivityUsageData
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Color { get; set; } = "#6c5ce7";
         public long TotalUsage { get; set; }
     }
 }

@@ -276,6 +276,7 @@
                         <Button x:Name="btnDaily" Content="📅  每日" Style="{StaticResource SidebarBtn}" Click="NavDaily_Click"/>
                         <Button x:Name="btnWeekly" Content="📆  每周" Style="{StaticResource SidebarBtn}" Click="NavWeekly_Click"/>
                         <Button x:Name="btnCategory" Content="🏷  分类统计" Style="{StaticResource SidebarBtn}" Click="NavCategory_Click"/>
+                        <Button x:Name="btnActivity" Content="🎯  活动统计" Style="{StaticResource SidebarBtn}" Click="NavActivity_Click" Visibility="Collapsed"/>
                     </StackPanel>
 
                     <!-- Section: 数据 -->
