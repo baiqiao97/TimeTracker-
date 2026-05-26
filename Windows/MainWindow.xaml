@@ -315,13 +315,29 @@
                                    FontSize="13" Foreground="{StaticResource TextSecondary}" Margin="0,3,0,0"/>
                     </StackPanel>
                     <StackPanel x:Name="activityPanel" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top" Visibility="Collapsed">
-                        <ComboBox x:Name="cmbActivity" Width="130" Height="34" FontSize="12"
-                                  VerticalContentAlignment="Center" Padding="10,0"
-                                  SelectionChanged="CmbActivity_Changed" ToolTip="切换当前活动"/>
+                        <Border Background="#f3f4f6" CornerRadius="10" Padding="2,0,0,0">
+                            <ComboBox x:Name="cmbActivity" Width="120" Height="32" FontSize="12"
+                                      VerticalContentAlignment="Center" Padding="8,0"
+                                      BorderThickness="0" Background="Transparent"
+                                      SelectionChanged="CmbActivity_Changed" ToolTip="切换当前活动"/>
+                        </Border>
                         <Button x:Name="btnAddActivity" Content="+" Width="30" Height="30" FontSize="16"
-                                Background="Transparent" BorderThickness="0" Foreground="#6b7280"
-                                Cursor="Hand" ToolTip="新建活动" Click="BtnAddActivity_Click" Margin="4,0,0,0"
-                                FocusVisualStyle="{x:Null}"/>
+                                Background="#6c5ce7" Foreground="White" BorderThickness="0"
+                                FontWeight="Bold" Cursor="Hand" ToolTip="新建活动"
+                                Click="BtnAddActivity_Click" Margin="6,0,0,0" FocusVisualStyle="{x:Null}">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="bd" Background="#6c5ce7" CornerRadius="15">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="bd" Property="Background" Value="#5a4bd1"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
                     </StackPanel>
                 </Grid>
 

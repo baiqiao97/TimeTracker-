@@ -28,6 +28,7 @@ namespace TimeTracker
         private const int IdleThresholdSeconds = 300; // 5分钟无操作自动暂停
         private DateTime _idlePauseSince;
         private bool _idlePaused;
+        private DateTime _idleSuppressUntil = DateTime.MinValue; // 手动恢复后短暂抑制空闲检测
         private readonly CancellationTokenSource _cancellationTokenSource;
         private readonly Task _trackingTask;
         private string _currentProcessName = string.Empty;
@@ -91,6 +92,7 @@ namespace TimeTracker
             if (!_isPaused && !_idlePaused) return;
             _isPaused = false;
             _idlePaused = false;
+            _idleSuppressUntil = DateTime.Now.AddSeconds(5); // 手动恢复后5秒内不触发空闲检测
             _lastActivityTime = DateTime.Now;
             _currentProcessName = string.Empty;
             _currentWindowTitle = string.Empty;
@@ -176,19 +178,23 @@ namespace TimeTracker
                 // 空闲检测：5分钟无操作自动暂停，恢复操作自动恢复
                 if (!_isPaused || _idlePaused)
                 {
-                    var idleSec = GetIdleSeconds();
-                    if (idleSec >= IdleThresholdSeconds && !_idlePaused)
+                    var now = DateTime.Now;
+                    if (now >= _idleSuppressUntil)
                     {
-                        _idlePaused = true;
-                        _idlePauseSince = DateTime.Now;
-                        StatusUpdated?.Invoke("空闲暂停 (5分钟无操作)");
-                        PauseStateChanged?.Invoke(true);
-                    }
-                    else if (idleSec < IdleThresholdSeconds && _idlePaused)
-                    {
-                        _idlePaused = false;
-                        StatusUpdated?.Invoke("追踪已恢复");
-                        PauseStateChanged?.Invoke(false);
+                        var idleSec = GetIdleSeconds();
+                        if (idleSec >= IdleThresholdSeconds && !_idlePaused)
+                        {
+                            _idlePaused = true;
+                            _idlePauseSince = now;
+                            StatusUpdated?.Invoke("空闲暂停 (5分钟无操作)");
+                            PauseStateChanged?.Invoke(true);
+                        }
+                        else if (idleSec < IdleThresholdSeconds && _idlePaused)
+                        {
+                            _idlePaused = false;
+                            StatusUpdated?.Invoke("追踪已恢复");
+                            PauseStateChanged?.Invoke(false);
+                        }
                     }
                 }
 
