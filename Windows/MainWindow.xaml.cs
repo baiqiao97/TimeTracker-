@@ -1032,10 +1032,7 @@ namespace TimeTracker
         // ======================== ACTIVITY MODE ========================
         private void RefreshActivitySelector()
         {
-            bool active = AppSettings.TrackingMode == "activity";
-            cmbActivity.Visibility = active ? Visibility.Visible : Visibility.Collapsed;
-            btnAddActivity.Visibility = active ? Visibility.Visible : Visibility.Collapsed;
-            if (!active) return;
+            if (AppSettings.TrackingMode != "activity") return;
 
             var acts = _databaseManager.GetActivities();
             if (acts.Count == 0)
@@ -1045,25 +1042,6 @@ namespace TimeTracker
                 _databaseManager.AddActivity("娱乐", "#f59e0b", "🎮");
                 _databaseManager.AddActivity("社交", "#3b82f6", "💬");
                 acts = _databaseManager.GetActivities();
-            }
-            cmbActivity.ItemsSource = acts;
-            cmbActivity.DisplayMemberPath = "Name";
-
-            if (AppSettings.CurrentActivityId.HasValue)
-            {
-                var selected = acts.FirstOrDefault(a => a.Id == AppSettings.CurrentActivityId.Value);
-                if (selected != null) cmbActivity.SelectedItem = selected;
-            }
-            if (cmbActivity.SelectedItem == null && acts.Count > 0)
-                cmbActivity.SelectedIndex = 0;
-        }
-
-        private void CmbActivity_Changed(object sender, SelectionChangedEventArgs e)
-        {
-            if (cmbActivity.SelectedItem is ActivityData act)
-            {
-                AppSettings.CurrentActivityId = act.Id;
-                AppSettings.Save();
             }
         }
 
