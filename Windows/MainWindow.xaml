@@ -14,30 +14,35 @@
     <Window.Resources>
         <!-- Modern Color Palette -->
         <SolidColorBrush x:Key="SidebarBg" Color="#1a1d2e"/>
-        <SolidColorBrush x:Key="SidebarHover" Color="#262a3e"/>
-        <SolidColorBrush x:Key="SidebarActive" Color="#333a56"/>
+        <SolidColorBrush x:Key="SidebarTop" Color="#1a1d2e"/>
         <SolidColorBrush x:Key="Accent" Color="#6c5ce7"/>
         <SolidColorBrush x:Key="AccentLight" Color="#a29bfe"/>
-        <SolidColorBrush x:Key="Bg" Color="#f0f2f5"/>
+        <SolidColorBrush x:Key="AccentDark" Color="#5a4bd1"/>
+        <SolidColorBrush x:Key="Bg" Color="#f5f6fa"/>
         <SolidColorBrush x:Key="CardBg" Color="#ffffff"/>
         <SolidColorBrush x:Key="TextPrimary" Color="#1a1d2e"/>
         <SolidColorBrush x:Key="TextSecondary" Color="#6b7280"/>
         <SolidColorBrush x:Key="Border" Color="#e5e7eb"/>
         <SolidColorBrush x:Key="Success" Color="#10b981"/>
+        <SolidColorBrush x:Key="SuccessBg" Color="#ecfdf5"/>
         <SolidColorBrush x:Key="Warning" Color="#f59e0b"/>
         <SolidColorBrush x:Key="Danger" Color="#ef4444"/>
         <SolidColorBrush x:Key="Info" Color="#3b82f6"/>
+        <SolidColorBrush x:Key="Indigo" Color="#6366f1"/>
+        <SolidColorBrush x:Key="Pink" Color="#ec4899"/>
+        <SolidColorBrush x:Key="Teal" Color="#14b8a6"/>
+        <SolidColorBrush x:Key="Amber" Color="#f59e0b"/>
 
-        <DropShadowEffect x:Key="CardShadow" BlurRadius="20" ShadowDepth="0" Opacity="0.08" Color="#000000"/>
-        <DropShadowEffect x:Key="HoverShadow" BlurRadius="30" ShadowDepth="2" Opacity="0.12" Color="#000000"/>
+        <DropShadowEffect x:Key="CardShadow" BlurRadius="16" ShadowDepth="0" Opacity="0.06" Color="#000000"/>
+        <DropShadowEffect x:Key="SidebarShadow" BlurRadius="0" ShadowDepth="4" Opacity="0.1" Color="#000000"/>
 
-        <!-- Button Style -->
+        <!-- Sidebar Navigation Button Style -->
         <Style TargetType="Button" x:Key="SidebarBtn">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="#a0aec0"/>
             <Setter Property="FontSize" Value="13"/>
             <Setter Property="Height" Value="44"/>
-            <Setter Property="Padding" Value="16,0"/>
+            <Setter Property="Padding" Value="20,0,16,0"/>
             <Setter Property="HorizontalContentAlignment" Value="Left"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Cursor" Value="Hand"/>
@@ -45,15 +50,24 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="border" Background="{TemplateBinding Background}"
+                        <Border x:Name="border" Background="Transparent"
                                 CornerRadius="10" Padding="{TemplateBinding Padding}"
                                 Margin="8,1,8,1">
-                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                              VerticalAlignment="Center"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="3"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Border x:Name="indicator" Grid.Column="0" Background="Transparent"
+                                        CornerRadius="2" Margin="-4,0,0,0" Visibility="Collapsed"/>
+                                <ContentPresenter Grid.Column="1" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                  VerticalAlignment="Center"/>
+                            </Grid>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="#262a3e"/>
+                                <Setter TargetName="border" Property="Background" Value="#252a3e"/>
+                                <Setter Property="Foreground" Value="#e2e8f0"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -61,21 +75,33 @@
             </Setter>
         </Style>
 
+        <Style TargetType="Button" x:Key="SidebarBtnActive" BasedOn="{StaticResource SidebarBtn}">
+            <Setter Property="Foreground" Value="White"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Foreground" Value="White"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
         <Style TargetType="Button" x:Key="PrimaryBtn">
             <Setter Property="Background" Value="#6c5ce7"/>
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="FontSize" Value="13"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Height" Value="36"/>
-            <Setter Property="Padding" Value="16,0"/>
+            <Setter Property="Height" Value="38"/>
+            <Setter Property="Padding" Value="18,0"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="border" Background="{TemplateBinding Background}"
-                                CornerRadius="8" Padding="{TemplateBinding Padding}">
+                        <Border x:Name="border" Background="#6c5ce7" CornerRadius="10"
+                                Padding="{TemplateBinding Padding}">
+                            <Border.Effect>
+                                <DropShadowEffect BlurRadius="8" ShadowDepth="2" Opacity="0.2" Color="#6c5ce7"/>
+                            </Border.Effect>
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
@@ -91,26 +117,23 @@
         <Style TargetType="Button" x:Key="GhostBtn">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="#6b7280"/>
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="Height" Value="32"/>
-            <Setter Property="Padding" Value="12,0"/>
-            <Setter Property="BorderBrush" Value="#d1d5db"/>
-            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="Padding" Value="14,0"/>
+            <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="border" Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="6" Padding="{TemplateBinding Padding}">
+                        <Border x:Name="border" Background="Transparent" CornerRadius="8"
+                                Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="#f9fafb"/>
-                                <Setter TargetName="border" Property="BorderBrush" Value="#9ca3af"/>
+                                <Setter TargetName="border" Property="Background" Value="#f3f4f6"/>
+                                <Setter Property="Foreground" Value="#1a1d2e"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -118,7 +141,34 @@
             </Setter>
         </Style>
 
-        <!-- DataGrid Style -->
+        <Style TargetType="Button" x:Key="TagBtn">
+            <Setter Property="Background" Value="#f3f4f6"/>
+            <Setter Property="Foreground" Value="#6c5ce7"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="Padding" Value="14,0"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="#f3f4f6" CornerRadius="16"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#e8e4ff"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- DataGrid -->
         <Style TargetType="DataGrid">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="RowBackground" Value="Transparent"/>
@@ -126,7 +176,7 @@
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="GridLinesVisibility" Value="None"/>
             <Setter Property="HeadersVisibility" Value="Column"/>
-            <Setter Property="RowHeight" Value="44"/>
+            <Setter Property="RowHeight" Value="48"/>
             <Setter Property="FontSize" Value="13"/>
             <Setter Property="CanUserAddRows" Value="False"/>
             <Setter Property="SelectionMode" Value="Single"/>
@@ -137,13 +187,12 @@
             <Setter Property="Foreground" Value="#6b7280"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="FontSize" Value="11"/>
-            <Setter Property="Padding" Value="16,12"/>
+            <Setter Property="Padding" Value="16,14"/>
             <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="BorderBrush" Value="Transparent"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="DataGridColumnHeader">
-                        <Border Background="{TemplateBinding Background}"
+                        <Border Background="Transparent"
                                 BorderBrush="#f3f4f6" BorderThickness="0,0,0,1"
                                 Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Left" VerticalAlignment="Center"/>
@@ -153,7 +202,7 @@
             </Setter>
         </Style>
         <Style TargetType="DataGridCell">
-            <Setter Property="Padding" Value="16,8"/>
+            <Setter Property="Padding" Value="16,10"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Foreground" Value="#1a1d2e"/>
             <Setter Property="Background" Value="Transparent"/>
@@ -161,15 +210,9 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="DataGridCell">
-                        <Border x:Name="cellBorder" Background="{TemplateBinding Background}"
-                                Padding="{TemplateBinding Padding}">
+                        <Border Background="Transparent" Padding="{TemplateBinding Padding}">
                             <ContentPresenter VerticalAlignment="Center"/>
                         </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="cellBorder" Property="Background" Value="Transparent"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
@@ -182,21 +225,18 @@
         </Style>
         <Style TargetType="DataGridRow">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="#1a1d2e"/>
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#f3f4f6"/>
-                </Trigger>
-                <Trigger Property="IsSelected" Value="True">
-                    <Setter Property="Background" Value="Transparent"/>
-                    <Setter Property="Foreground" Value="#1a1d2e"/>
+                    <Setter Property="Background" Value="#f8f9fb"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
     </Window.Resources>
 
-    <!-- Window Chrome -->
-    <Border Background="{StaticResource Bg}" CornerRadius="0" x:Name="mainBorder" FocusVisualStyle="{x:Null}">
+    <Border Background="{StaticResource Bg}" CornerRadius="12" x:Name="mainBorder">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="30" ShadowDepth="0" Opacity="0.12"/>
+        </Border.Effect>
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="220"/>
@@ -204,91 +244,87 @@
             </Grid.ColumnDefinitions>
 
             <!-- ===== SIDEBAR ===== -->
-            <Border Grid.Column="0" Background="{StaticResource SidebarBg}">
+            <Border Grid.Column="0" CornerRadius="12,0,0,12">
+                <Border.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                        <GradientStop Color="#1a1d2e" Offset="0"/>
+                        <GradientStop Color="#1f2347" Offset="0.5"/>
+                        <GradientStop Color="#1a1d2e" Offset="1"/>
+                    </LinearGradientBrush>
+                </Border.Background>
                 <Grid>
                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
                     <!-- Logo -->
-                    <Border Grid.Row="0" Padding="20,24,20,20">
-                        <StackPanel>
-                            <TextBlock Text="TimeTracker" FontSize="20" FontWeight="Bold"
-                                       Foreground="White" FontFamily="Segoe UI"/>
-                            <TextBlock Text="智能时间管理" FontSize="11"
-                                       Foreground="#a0aec0" Margin="0,2,0,0"/>
-                        </StackPanel>
-                    </Border>
+                    <StackPanel Grid.Row="0" Margin="24,28,24,8">
+                        <TextBlock Text="TimeTracker" FontSize="22" FontWeight="Bold"
+                                   Foreground="White"/>
+                        <TextBlock Text="时间管理专家" FontSize="11"
+                                   Foreground="#7c8db5" Margin="0,3,0,0"/>
+                    </StackPanel>
 
-                    <!-- Nav Items -->
+                    <!-- Section: 统计 -->
                     <StackPanel Grid.Row="1" Margin="0,8,0,0">
-                        <Button x:Name="btnOverview" Content="📊  概览" Style="{StaticResource SidebarBtn}"
-                                Click="NavOverview_Click"/>
-                        <Button x:Name="btnDaily" Content="📅  每日" Style="{StaticResource SidebarBtn}"
-                                Click="NavDaily_Click"/>
-                        <Button x:Name="btnWeekly" Content="📆  每周" Style="{StaticResource SidebarBtn}"
-                                Click="NavWeekly_Click"/>
-                        <Button x:Name="btnCategory" Content="🏷️  分类统计" Style="{StaticResource SidebarBtn}"
-                                Click="NavCategory_Click"/>
+                        <TextBlock Text="数据统计" FontSize="10" FontWeight="SemiBold"
+                                   Foreground="#64748b" Margin="24,0,0,6" TextOptions.TextFormattingMode="Display"/>
+                        <Button x:Name="btnOverview" Content="📊  概览" Style="{StaticResource SidebarBtn}" Click="NavOverview_Click"/>
+                        <Button x:Name="btnDaily" Content="📅  每日" Style="{StaticResource SidebarBtn}" Click="NavDaily_Click"/>
+                        <Button x:Name="btnWeekly" Content="📆  每周" Style="{StaticResource SidebarBtn}" Click="NavWeekly_Click"/>
+                        <Button x:Name="btnCategory" Content="🏷  分类统计" Style="{StaticResource SidebarBtn}" Click="NavCategory_Click"/>
+                    </StackPanel>
 
-                        <Separator Background="#333a56" Height="1" Margin="16,12,16,8" Opacity="0.5"/>
-
-                        <Button Content="📥  导入" Style="{StaticResource SidebarBtn}"
-                                Click="NavImport_Click"/>
-                        <Button Content="📤  导出" Style="{StaticResource SidebarBtn}"
-                                Click="NavExport_Click"/>
-                        <Button Content="🔄  同步" Style="{StaticResource SidebarBtn}"
-                                Click="NavSync_Click"/>
-
-                        <Separator Background="#333a56" Height="1" Margin="16,12,16,8" Opacity="0.5"/>
-
-                        <Button Content="🏷️  管理标签" Style="{StaticResource SidebarBtn}"
-                                Click="NavManageCategories_Click"/>
+                    <!-- Section: 数据 -->
+                    <StackPanel Grid.Row="2" Margin="0,16,0,0">
+                        <TextBlock Text="数据管理" FontSize="10" FontWeight="SemiBold"
+                                   Foreground="#64748b" Margin="24,0,0,6" TextOptions.TextFormattingMode="Display"/>
+                        <Button Content="📥  导入" Style="{StaticResource SidebarBtn}" Click="NavImport_Click"/>
+                        <Button Content="📤  导出" Style="{StaticResource SidebarBtn}" Click="NavExport_Click"/>
+                        <Button Content="🔄  同步" Style="{StaticResource SidebarBtn}" Click="NavSync_Click"/>
+                        <Button Content="🏷  管理标签" Style="{StaticResource SidebarBtn}" Click="NavManageCategories_Click"/>
                     </StackPanel>
 
                     <!-- Bottom -->
-                    <StackPanel Grid.Row="2" Margin="0,0,0,16">
-                        <Button Content="⚙️  设置" Style="{StaticResource SidebarBtn}"
-                                Click="NavSettings_Click"/>
+                    <StackPanel Grid.Row="3" Margin="0,0,0,20">
+                        <Button Content="⚙  设置" Style="{StaticResource SidebarBtn}" Click="NavSettings_Click"/>
                     </StackPanel>
                 </Grid>
             </Border>
 
             <!-- ===== MAIN CONTENT ===== -->
-            <Grid Grid.Column="1" Margin="24,16,24,16">
+            <Grid Grid.Column="1" Margin="28,20,28,20">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
                 <!-- Header -->
-                <Border Grid.Row="0" Margin="0,0,0,16">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <StackPanel>
-                            <TextBlock x:Name="lblPageTitle" Text="概览" FontSize="24" FontWeight="Bold"
-                                       Foreground="{StaticResource TextPrimary}"/>
-                            <TextBlock x:Name="lblPageSubtitle" Text="今日应用使用总览"
-                                       FontSize="13" Foreground="{StaticResource TextSecondary}" Margin="0,2,0,0"/>
-                        </StackPanel>
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
-                            <ComboBox x:Name="cmbActivity" Width="140" Height="32" FontSize="12"
-                                      VerticalContentAlignment="Center" Padding="8,0"
-                                      SelectionChanged="CmbActivity_Changed" ToolTip="当前活动（活动模式）"/>
-                            <Button x:Name="btnAddActivity" Content="+" Width="28" Height="28" FontSize="16"
-                                    Background="Transparent" BorderThickness="0" Foreground="#6b7280"
-                                    Cursor="Hand" ToolTip="新建活动" Click="BtnAddActivity_Click" Margin="2,0,0,0"
-                                    FocusVisualStyle="{x:Null}"/>
-                        </StackPanel>
-                    </Grid>
-                </Border>
+                <Grid Grid.Row="0" Margin="0,4,0,16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock x:Name="lblPageTitle" Text="概览" FontSize="26" FontWeight="Bold"
+                                   Foreground="{StaticResource TextPrimary}"/>
+                        <TextBlock x:Name="lblPageSubtitle" Text="今日应用使用总览"
+                                   FontSize="13" Foreground="{StaticResource TextSecondary}" Margin="0,3,0,0"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                        <ComboBox x:Name="cmbActivity" Width="140" Height="34" FontSize="12"
+                                  VerticalContentAlignment="Center" Padding="10,0"
+                                  SelectionChanged="CmbActivity_Changed" ToolTip="当前活动"/>
+                        <Button x:Name="btnAddActivity" Content="+" Width="30" Height="30" FontSize="16"
+                                Background="Transparent" BorderThickness="0" Foreground="#6b7280"
+                                Cursor="Hand" ToolTip="新建活动" Click="BtnAddActivity_Click" Margin="4,0,0,0"
+                                FocusVisualStyle="{x:Null}"/>
+                    </StackPanel>
+                </Grid>
 
-                <!-- Content Area -->
                 <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
                     <StackPanel>
 
@@ -301,108 +337,120 @@
                             </Grid.ColumnDefinitions>
 
                             <!-- Total Usage Card -->
-                            <Border Grid.Column="0" Background="{StaticResource CardBg}" CornerRadius="14"
-                                    Padding="20" Margin="0,0,8,0" Effect="{StaticResource CardShadow}">
-                                <StackPanel>
-                                    <TextBlock Text="总使用时长" FontSize="12" Foreground="{StaticResource TextSecondary}"/>
-                                    <TextBlock x:Name="lblTotalTime" Text="--" FontSize="28" FontWeight="Bold"
-                                               Foreground="{StaticResource TextPrimary}" Margin="0,4,0,0"/>
-                                    <TextBlock x:Name="lblDateRange" Text="今日" FontSize="11"
-                                               Foreground="{StaticResource TextSecondary}" Margin="0,2,0,0"/>
-                                </StackPanel>
+                            <Border Grid.Column="0" Background="{StaticResource CardBg}" CornerRadius="16"
+                                    Padding="22" Margin="0,0,8,0" Effect="{StaticResource CardShadow}">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+                                    <Border Height="3" CornerRadius="2" Background="#6c5ce7" Margin="-22,-22,-22,0"/>
+                                    <StackPanel Grid.Row="1" Margin="0,14,0,0">
+                                        <TextBlock Text="总使用时长" FontSize="12" Foreground="{StaticResource TextSecondary}"/>
+                                        <TextBlock x:Name="lblTotalTime" Text="--" FontSize="30" FontWeight="Bold"
+                                                   Foreground="{StaticResource TextPrimary}" Margin="0,6,0,0"/>
+                                        <TextBlock x:Name="lblDateRange" Text="今日" FontSize="11"
+                                                   Foreground="{StaticResource TextSecondary}" Margin="0,3,0,0"/>
+                                    </StackPanel>
+                                </Grid>
                             </Border>
 
                             <!-- Tracked Apps Card -->
-                            <Border Grid.Column="1" Background="{StaticResource CardBg}" CornerRadius="14"
-                                    Padding="20" Margin="4,0,4,0" Effect="{StaticResource CardShadow}">
-                                <StackPanel>
-                                    <TextBlock Text="追踪应用" FontSize="12" Foreground="{StaticResource TextSecondary}"/>
-                                    <TextBlock x:Name="lblAppCount" Text="--" FontSize="28" FontWeight="Bold"
-                                               Foreground="{StaticResource Accent}" Margin="0,4,0,0"/>
-                                    <TextBlock Text="个应用" FontSize="11"
-                                               Foreground="{StaticResource TextSecondary}" Margin="0,2,0,0"/>
-                                </StackPanel>
+                            <Border Grid.Column="1" Background="{StaticResource CardBg}" CornerRadius="16"
+                                    Padding="22" Margin="4,0,4,0" Effect="{StaticResource CardShadow}">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+                                    <Border Height="3" CornerRadius="2" Background="#6366f1" Margin="-22,-22,-22,0"/>
+                                    <StackPanel Grid.Row="1" Margin="0,14,0,0">
+                                        <TextBlock Text="追踪应用" FontSize="12" Foreground="{StaticResource TextSecondary}"/>
+                                        <TextBlock x:Name="lblAppCount" Text="--" FontSize="30" FontWeight="Bold"
+                                                   Foreground="#6366f1" Margin="0,6,0,0"/>
+                                        <TextBlock Text="个应用" FontSize="11"
+                                                   Foreground="{StaticResource TextSecondary}" Margin="0,3,0,0"/>
+                                    </StackPanel>
+                                </Grid>
                             </Border>
 
                             <!-- Active Time Card -->
-                            <Border Grid.Column="2" Background="{StaticResource CardBg}" CornerRadius="14"
-                                    Padding="20" Margin="8,0,0,0" Effect="{StaticResource CardShadow}">
+                            <Border Grid.Column="2" Background="{StaticResource CardBg}" CornerRadius="16"
+                                    Padding="22" Margin="8,0,0,0" Effect="{StaticResource CardShadow}">
                                 <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-                                    <StackPanel Grid.Column="0">
-                                        <TextBlock Text="活跃状态" FontSize="12" Foreground="{StaticResource TextSecondary}"/>
-                                        <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                                            <Ellipse x:Name="statusDot" Width="10" Height="10" Fill="{StaticResource Success}"
-                                                     VerticalAlignment="Center" Margin="0,0,8,0"/>
-                                            <TextBlock x:Name="lblStatus" Text="追踪中" FontSize="20" FontWeight="SemiBold"
-                                                       Foreground="{StaticResource Success}"/>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+                                    <Border Height="3" CornerRadius="2" Background="#10b981" Margin="-22,-22,-22,0"/>
+                                    <Grid Grid.Row="1" Margin="0,14,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel>
+                                            <TextBlock Text="活跃状态" FontSize="12" Foreground="{StaticResource TextSecondary}"/>
+                                            <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                                <Ellipse x:Name="statusDot" Width="10" Height="10" Fill="#10b981"
+                                                         VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                                <TextBlock x:Name="lblStatus" Text="追踪中" FontSize="22" FontWeight="SemiBold"
+                                                           Foreground="#10b981"/>
+                                            </StackPanel>
+                                            <TextBlock x:Name="lblCurrentApp" Text="就绪" FontSize="12"
+                                                       Foreground="{StaticResource TextSecondary}" Margin="0,3,0,0"/>
                                         </StackPanel>
-                                        <TextBlock x:Name="lblCurrentApp" Text="就绪" FontSize="11"
-                                                   Foreground="{StaticResource TextSecondary}" Margin="0,2,0,0"/>
-                                    </StackPanel>
-                                    <Button x:Name="btnPause" Grid.Column="1" Content="⏸" Width="40" Height="40"
-                                            FontSize="18" Background="#f0f2f5" BorderThickness="0"
-                                            Cursor="Hand" Click="BtnPause_Click" VerticalAlignment="Center"
-                                            ToolTip="暂停/恢复追踪">
-                                        <Button.Template>
-                                            <ControlTemplate TargetType="Button">
-                                                <Border x:Name="border" Background="{TemplateBinding Background}"
-                                                        CornerRadius="20">
-                                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                </Border>
-                                                <ControlTemplate.Triggers>
-                                                    <Trigger Property="IsMouseOver" Value="True">
-                                                        <Setter TargetName="border" Property="Background" Value="#e2e5ea"/>
-                                                    </Trigger>
-                                                </ControlTemplate.Triggers>
-                                            </ControlTemplate>
-                                        </Button.Template>
-                                    </Button>
+                                        <Button x:Name="btnPause" Grid.Column="1" Content="⏸" Width="44" Height="44"
+                                                FontSize="18" Background="#f5f6fa" BorderThickness="0"
+                                                Cursor="Hand" Click="BtnPause_Click" VerticalAlignment="Center"
+                                                ToolTip="暂停/恢复追踪">
+                                            <Button.Template>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Border x:Name="bd" Background="#f5f6fa" CornerRadius="22">
+                                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                    </Border>
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter TargetName="bd" Property="Background" Value="#e8e4ff"/>
+                                                        </Trigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Button.Template>
+                                        </Button>
+                                    </Grid>
                                 </Grid>
                             </Border>
                         </Grid>
 
                         <!-- Action Buttons Row -->
                         <StackPanel x:Name="actionPanel" Orientation="Horizontal" Margin="0,0,0,16">
-                            <Button Content="每日" x:Name="btnActionDaily" Style="{StaticResource GhostBtn}"
-                                    Click="ActionDaily_Click" Margin="0,0,6,0"/>
-                            <Button Content="每周" Style="{StaticResource GhostBtn}"
-                                    Click="ActionWeekly_Click" Margin="0,0,6,0"/>
-                            <Button Content="每月" Style="{StaticResource GhostBtn}"
-                                    Click="ActionMonthly_Click" Margin="0,0,6,0"/>
-                            <Button Content="分类统计" Style="{StaticResource GhostBtn}"
-                                    Click="ActionCategory_Click" Margin="0,0,6,0"/>
-                            <Button Content="前台/后台" Style="{StaticResource GhostBtn}"
-                                    Click="ActionForeground_Click"/>
-                            <Button Content="📊 图表" Style="{StaticResource GhostBtn}"
-                                    Click="ActionChart_Click"/>
+                            <Button Content="每日" x:Name="btnActionDaily" Style="{StaticResource TagBtn}" Margin="0,0,6,0" Click="ActionDaily_Click"/>
+                            <Button Content="每周" Style="{StaticResource TagBtn}" Margin="0,0,6,0" Click="ActionWeekly_Click"/>
+                            <Button Content="每月" Style="{StaticResource TagBtn}" Margin="0,0,6,0" Click="ActionMonthly_Click"/>
+                            <Button Content="分类统计" Style="{StaticResource TagBtn}" Margin="0,0,6,0" Click="ActionCategory_Click"/>
+                            <Button Content="前台/后台" Style="{StaticResource TagBtn}" Click="ActionForeground_Click"/>
+                            <Button Content="📊 图表" Style="{StaticResource PrimaryBtn}" Margin="16,0,0,0" Click="ActionChart_Click"/>
                         </StackPanel>
 
                         <!-- Data Table Card -->
-                        <Border Background="{StaticResource CardBg}" CornerRadius="14" Padding="4"
+                        <Border Background="{StaticResource CardBg}" CornerRadius="16" Padding="6"
                                 Effect="{StaticResource CardShadow}">
-                            <DataGrid x:Name="dataGrid" AutoGenerateColumns="False" Height="280"
+                            <DataGrid x:Name="dataGrid" AutoGenerateColumns="False" Height="290"
                                       MouseDoubleClick="DataGrid_MouseDoubleClick"
-                                      SelectionChanged="DataGrid_SelectionChanged">
-                                <!-- Columns set dynamically -->
-                            </DataGrid>
+                                      SelectionChanged="DataGrid_SelectionChanged"/>
                         </Border>
 
                         <!-- Chart Area -->
-                        <Border x:Name="chartBorder" Background="{StaticResource CardBg}" CornerRadius="14"
-                                Padding="20" Margin="0,16,0,0" Effect="{StaticResource CardShadow}" Visibility="Collapsed">
+                        <Border x:Name="chartBorder" Background="{StaticResource CardBg}" CornerRadius="16"
+                                Padding="24" Margin="0,16,0,0" Effect="{StaticResource CardShadow}" Visibility="Collapsed">
                             <Grid>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="*"/>
                                 </Grid.RowDefinitions>
-                                <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-                                    <TextBlock Text="📊 使用统计图表" FontSize="14" FontWeight="Bold"
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                                    <TextBlock Text="📊 使用统计图表" FontSize="16" FontWeight="Bold"
                                                Foreground="{StaticResource TextPrimary}" VerticalAlignment="Center"/>
-                                    <Button Content="关闭" Style="{StaticResource GhostBtn}" Margin="12,0,0,0"
+                                    <Button Content="关闭图表" Style="{StaticResource GhostBtn}" Margin="16,0,0,0"
                                             Click="ChartClose_Click"/>
                                 </StackPanel>
                                 <Grid Grid.Row="1">
@@ -410,26 +458,26 @@
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
-                                    <Border Grid.Column="0" Margin="0,0,8,0">
+                                    <Border Grid.Column="0" Background="#fafbfc" CornerRadius="12" Padding="16" Margin="0,0,8,0">
                                         <Grid>
                                             <Grid.RowDefinitions>
                                                 <RowDefinition Height="Auto"/>
                                                 <RowDefinition Height="*"/>
                                             </Grid.RowDefinitions>
-                                            <TextBlock Text="Top 10 柱状图" FontSize="12"
-                                                       Foreground="{StaticResource TextSecondary}" Margin="0,0,0,6"/>
+                                            <TextBlock Text="Top 10 应用耗时" FontSize="12" FontWeight="SemiBold"
+                                                       Foreground="{StaticResource TextSecondary}" Margin="0,0,0,10"/>
                                             <Canvas x:Name="barChartCanvas" Grid.Row="1" Height="220"
                                                     Background="Transparent" ClipToBounds="True"/>
                                         </Grid>
                                     </Border>
-                                    <Border Grid.Column="1" Margin="8,0,0,0">
+                                    <Border Grid.Column="1" Background="#fafbfc" CornerRadius="12" Padding="16" Margin="8,0,0,0">
                                         <Grid>
                                             <Grid.RowDefinitions>
                                                 <RowDefinition Height="Auto"/>
                                                 <RowDefinition Height="*"/>
                                             </Grid.RowDefinitions>
-                                            <TextBlock Text="标签分类占比" FontSize="12"
-                                                       Foreground="{StaticResource TextSecondary}" Margin="0,0,0,6"/>
+                                            <TextBlock Text="标签分类占比" FontSize="12" FontWeight="SemiBold"
+                                                       Foreground="{StaticResource TextSecondary}" Margin="0,0,0,10"/>
                                             <Canvas x:Name="pieChartCanvas" Grid.Row="1" Height="220"
                                                     Background="Transparent" ClipToBounds="True"/>
                                         </Grid>
