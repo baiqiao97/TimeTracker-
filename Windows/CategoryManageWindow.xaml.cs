@@ -20,6 +20,18 @@ namespace TimeTracker
             _tracking = tracking;
             LoadCategories();
             LoadProcessMappings();
+
+            // 颜色输入框实时预览
+            txtColor.TextChanged += (_, _) =>
+            {
+                try
+                {
+                    var c = (System.Windows.Media.SolidColorBrush)new System.Windows.Media.BrushConverter().ConvertFrom(txtColor.Text)!;
+                    if (FindName("colorPreview") is System.Windows.Controls.Border preview)
+                        preview.Background = c;
+                }
+                catch { }
+            };
         }
 
         // ======================== 标签 CRUD ========================
