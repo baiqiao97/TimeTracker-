@@ -352,10 +352,12 @@
                                                     <ColumnDefinition Width="*"/>
                                                     <ColumnDefinition Width="Auto"/>
                                                 </Grid.ColumnDefinitions>
-                                                <TextBlock Grid.Column="0"
-                                                           Text="{Binding SelectionBoxItem, RelativeSource={RelativeSource FindAncestor, AncestorType=ComboBox}}"
-                                                           VerticalAlignment="Center" Margin="0,0,8,0"
-                                                           FontSize="12" Foreground="#1a1d2e"/>
+                                                <ContentPresenter Grid.Column="0"
+                                                                  Content="{Binding SelectionBoxItem, RelativeSource={RelativeSource FindAncestor, AncestorType=ComboBox}}"
+                                                                  ContentTemplate="{Binding SelectionBoxItemTemplate, RelativeSource={RelativeSource FindAncestor, AncestorType=ComboBox}}"
+                                                                  ContentTemplateSelector="{Binding ItemTemplateSelector, RelativeSource={RelativeSource FindAncestor, AncestorType=ComboBox}}"
+                                                                  VerticalAlignment="Center" Margin="0,0,8,0"
+                                                                  TextBlock.FontSize="12" TextBlock.Foreground="#1a1d2e"/>
                                                 <Path Grid.Column="1" x:Name="Arrow" Data="M3,6 L7,10 L11,6"
                                                       Stroke="#9ca3af" StrokeThickness="1.5"
                                                       StrokeStartLineCap="Round" StrokeEndLineCap="Round"
