@@ -358,21 +358,20 @@
                                                                   ContentTemplateSelector="{Binding ItemTemplateSelector, RelativeSource={RelativeSource FindAncestor, AncestorType=ComboBox}}"
                                                                   VerticalAlignment="Center" Margin="0,0,8,0"
                                                                   TextBlock.FontSize="12" TextBlock.Foreground="#1a1d2e"/>
-                                                <Path Grid.Column="1" x:Name="Arrow" Data="M3,6 L7,10 L11,6"
-                                                      Stroke="#9ca3af" StrokeThickness="1.5"
-                                                      StrokeStartLineCap="Round" StrokeEndLineCap="Round"
-                                                      Fill="Transparent" Width="14" Height="8"
-                                                      VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                                <TextBlock Grid.Column="1" x:Name="Arrow" Text="▾"
+                                                           FontSize="10" Foreground="#9ca3af"
+                                                           VerticalAlignment="Center"
+                                                           HorizontalAlignment="Center"/>
                                             </Grid>
                                         </Border>
                                         <ControlTemplate.Triggers>
                                             <Trigger Property="IsMouseOver" Value="True">
                                                 <Setter TargetName="border" Property="Background" Value="#e8e4ff"/>
-                                                <Setter TargetName="Arrow" Property="Stroke" Value="#6c5ce7"/>
+                                                <Setter TargetName="Arrow" Property="Foreground" Value="#6c5ce7"/>
                                             </Trigger>
                                             <Trigger Property="IsChecked" Value="True">
                                                 <Setter TargetName="border" Property="Background" Value="#ede9fe"/>
-                                                <Setter TargetName="Arrow" Property="Stroke" Value="#6c5ce7"/>
+                                                <Setter TargetName="Arrow" Property="Foreground" Value="#6c5ce7"/>
                                             </Trigger>
                                         </ControlTemplate.Triggers>
                                     </ControlTemplate>
