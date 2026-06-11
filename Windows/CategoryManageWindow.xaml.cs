@@ -185,7 +185,7 @@ namespace TimeTracker
                     // 2. 回写数据库已有记录
                     int updated = _db.UpdateProcessCategory(item.ProcessName, catId);
 
-                    MainWindow.ShowNotification("标签已分配",
+                    NotificationHelper.Show("标签已分配",
                         $"已更新 {updated} 条记录\n\"{item.DisplayName}\" → {item.CategoryName}");
                 }
             }

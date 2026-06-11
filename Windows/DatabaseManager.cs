@@ -41,12 +41,13 @@ namespace TimeTracker
                     "CREATE TABLE IF NOT EXISTS categories (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, color TEXT DEFAULT '#3498db', description TEXT DEFAULT '')",
                     "CREATE TABLE IF NOT EXISTS time_records (id INTEGER PRIMARY KEY AUTOINCREMENT, process_name TEXT NOT NULL, window_title TEXT, usage_time INTEGER NOT NULL, date TEXT NOT NULL, device_id TEXT NOT NULL, category_id INTEGER DEFAULT NULL, is_foreground INTEGER DEFAULT 1, activity_id INTEGER DEFAULT NULL, user_id INTEGER DEFAULT NULL)",
                     "CREATE TABLE IF NOT EXISTS devices (device_id TEXT PRIMARY KEY, device_name TEXT NOT NULL, platform TEXT NOT NULL, last_sync TEXT)",
-                    "CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, device_id TEXT NOT NULL)",
+                    "CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE NOT NULL, password TEXT NOT NULL, token TEXT, expires_at TEXT, created_at TEXT)",
                     "CREATE TABLE IF NOT EXISTS activities (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, color TEXT DEFAULT '#6c5ce7', icon TEXT DEFAULT '📌')",
                     "CREATE TABLE IF NOT EXISTS todo_items (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, description TEXT DEFAULT '', is_completed INTEGER DEFAULT 0, priority INTEGER DEFAULT 1, due_date TEXT, created_at TEXT NOT NULL, completed_at TEXT, device_id TEXT NOT NULL, user_id INTEGER DEFAULT NULL)",
                     "CREATE TABLE IF NOT EXISTS schedules (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, description TEXT DEFAULT '', start_time TEXT NOT NULL, end_time TEXT, is_all_day INTEGER DEFAULT 0, color TEXT DEFAULT '#6c5ce7', created_at TEXT NOT NULL, device_id TEXT NOT NULL, user_id INTEGER DEFAULT NULL)"
                 ];
 
+                // CA2100: 安全 — tables 数组中的 SQL 均为硬编码 DDL 常量，无可注入的用户输入
 #pragma warning disable CA2100
                 foreach (var sql in tables)
                 {
@@ -98,6 +99,10 @@ namespace TimeTracker
 
         public void InsertTimeRecords(IEnumerable<TimeRecordData> records)
         {
+            // 修复：空列表检查，避免无效连接/事务开销
+            var list = records as List<TimeRecordData> ?? records.ToList();
+            if (list.Count == 0) return;
+
             using var connection = CreateConnection();
             using var transaction = connection.BeginTransaction();
             try
@@ -108,7 +113,7 @@ namespace TimeTracker
                 ";
 
                 using var command = new SQLiteCommand(insertQuery, connection, transaction);
-                foreach (var r in records)
+                foreach (var r in list)
                 {
                     command.Parameters.Clear();
                     command.Parameters.AddWithValue("@processName", r.ProcessName);
@@ -630,6 +635,7 @@ namespace TimeTracker
             if (conditions.Count > 0) sql += " WHERE " + string.Join(" AND ", conditions);
             sql += " ORDER BY start_time ASC";
             using var conn = CreateConnection();
+            // CA2100: 安全 — sql 中的表名/列名均为硬编码常量，参数使用 @from/@to/@ui 参数化
 #pragma warning disable CA2100
             using var cmd = new SQLiteCommand(sql, conn);
 #pragma warning restore CA2100

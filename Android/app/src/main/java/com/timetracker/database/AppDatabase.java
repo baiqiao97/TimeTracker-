@@ -24,7 +24,7 @@ import com.timetracker.model.TimeRecord;
 import com.timetracker.model.TodoItem;
 import com.timetracker.model.User;
 
-@Database(entities = {TimeRecord.class, User.class, Device.class, Category.class, Activity.class, TodoItem.class, Schedule.class}, version = 4)
+@Database(entities = {TimeRecord.class, User.class, Device.class, Category.class, Activity.class, TodoItem.class, Schedule.class}, version = 5)
 @TypeConverters({DateConverter.class})
 public abstract class AppDatabase extends RoomDatabase {
     private static volatile AppDatabase instance;
@@ -88,13 +88,32 @@ public abstract class AppDatabase extends RoomDatabase {
         }
     };
 
+    private static final Migration MIGRATION_4_5 = new Migration(4, 5) {
+        @Override
+        public void migrate(SupportSQLiteDatabase database) {
+            // 将旧的 users(name, device_id) 迁移到新的 users(username, password, token, expires_at, created_at)
+            database.execSQL("CREATE TABLE IF NOT EXISTS users_new (" +
+                    "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                    "username TEXT UNIQUE NOT NULL, " +
+                    "password TEXT NOT NULL, " +
+                    "token TEXT, " +
+                    "expires_at TEXT, " +
+                    "created_at TEXT)");
+            // 迁移旧数据：name → username
+            database.execSQL("INSERT OR IGNORE INTO users_new(username, password, created_at) " +
+                    "SELECT name, '', datetime('now') FROM users");
+            database.execSQL("DROP TABLE users");
+            database.execSQL("ALTER TABLE users_new RENAME TO users");
+        }
+    };
+
     public static AppDatabase getInstance(Context context) {
         if (instance == null) {
             synchronized (AppDatabase.class) {
                 if (instance == null) {
                     instance = Room.databaseBuilder(context.getApplicationContext(),
                             AppDatabase.class, "time_tracker_db")
-                            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                             .fallbackToDestructiveMigration()
                             .build();
                 }

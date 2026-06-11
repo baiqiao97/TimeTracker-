@@ -5,7 +5,7 @@ using System.Text;
 
 namespace TimeTracker
 {
-    public class TrackingService
+    public class TrackingService : IDisposable
     {
         // 空闲检测 P/Invoke
         [StructLayout(LayoutKind.Sequential)]
@@ -22,14 +22,15 @@ namespace TimeTracker
         {
             var info = new LASTINPUTINFO { cbSize = (uint)Marshal.SizeOf<LASTINPUTINFO>() };
             GetLastInputInfo(ref info);
-            return (uint)Environment.TickCount - info.dwTime / 1000;
+            // 修复：使用 unchecked 处理 TickCount 回绕溢出
+            unchecked { return (uint)Environment.TickCount - info.dwTime; }
         }
 
         private const int IdleThresholdSeconds = 300; // 5分钟无操作自动暂停
         private DateTime _idlePauseSince;
         private bool _idlePaused;
         private DateTime _idleSuppressUntil = DateTime.MinValue; // 手动恢复后短暂抑制空闲检测
-        private readonly CancellationTokenSource _cancellationTokenSource;
+        private CancellationTokenSource? _cancellationTokenSource;
         private readonly Task _trackingTask;
         private string _currentProcessName = string.Empty;
         private string _currentWindowTitle = string.Empty;
@@ -40,6 +41,7 @@ namespace TimeTracker
         private readonly string _deviceId;
         private readonly Dictionary<string, int> _processCategoryMap;
         private readonly object _categoryMapLock = new();
+        private readonly object _flushLock = new(); // 修复：FlushPendingWrites 线程同步锁
         private volatile bool _isPaused;
         private readonly int _pollingIntervalMs;
 
@@ -59,12 +61,19 @@ namespace TimeTracker
             _pollingIntervalMs = Math.Max(500, intervalSeconds * 1000);
             LoadProcessCategoryMap();
 
-            _trackingTask = Task.Run(() => TrackWindowActivity(_cancellationTokenSource.Token));
+            _trackingTask = Task.Run(() => TrackWindowActivity(_cancellationTokenSource!.Token));
+        }
+
+        public void Dispose()
+        {
+            Stop();
+            _cancellationTokenSource?.Dispose();
+            _cancellationTokenSource = null;
         }
 
         public void Stop()
         {
-            _cancellationTokenSource.Cancel();
+            _cancellationTokenSource?.Cancel();
             try
             {
                 if (!_trackingTask.Wait(TimeSpan.FromSeconds(5)))
@@ -181,15 +190,16 @@ namespace TimeTracker
                     var now = DateTime.Now;
                     if (now >= _idleSuppressUntil)
                     {
-                        var idleSec = GetIdleSeconds();
-                        if (idleSec >= IdleThresholdSeconds && !_idlePaused)
+                        // 修复：GetIdleSeconds 返回的是毫秒差值（unchecked），需要与阈值比较
+                        var idleMs = GetIdleSeconds();
+                        if (idleMs >= (uint)(IdleThresholdSeconds * 1000) && !_idlePaused)
                         {
                             _idlePaused = true;
                             _idlePauseSince = now;
                             StatusUpdated?.Invoke("空闲暂停 (5分钟无操作)");
                             PauseStateChanged?.Invoke(true);
                         }
-                        else if (idleSec < IdleThresholdSeconds && _idlePaused)
+                        else if (idleMs < (uint)(IdleThresholdSeconds * 1000) && _idlePaused)
                         {
                             _idlePaused = false;
                             StatusUpdated?.Invoke("追踪已恢复");
@@ -276,7 +286,7 @@ namespace TimeTracker
             }
         }
 
-        // 仅在 TrackWindowActivity 单线程循环中访问，无需原子操作
+        // 仅在 TrackWindowActivity 单线程循环中访问
         private int _dbWriteCounter;
         private const int DB_WRITE_INTERVAL = 5;
 
@@ -361,35 +371,39 @@ namespace TimeTracker
 
         private void FlushPendingWrites(bool isForeground = true)
         {
-            try
+            // 修复：加锁防止与 Stop() 中的 FlushPendingWrites() 并发竞争
+            lock (_flushLock)
             {
-                if (_pendingDbWrite.IsEmpty) return;
-
-                var records = new List<TimeRecordData>();
-                foreach (var kvp in _pendingDbWrite)
+                try
                 {
-                    if (kvp.Value.UsageTime <= 0) continue;
-                    int? categoryId = GetCategoryIdForProcess(kvp.Key);
-                    records.Add(new TimeRecordData
-                    {
-                        ProcessName = kvp.Key,
-                        WindowTitle = kvp.Value.WindowTitle,
-                        UsageTime = kvp.Value.UsageTime,
-                        Date = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture),
-                        DeviceId = _deviceId,
-                        CategoryId = categoryId,
-                        IsForeground = isForeground,
-                        ActivityId = AppSettings.CurrentActivityId
-                    });
-                }
-                _pendingDbWrite.Clear();
+                    if (_pendingDbWrite.IsEmpty) return;
 
-                if (records.Count > 0)
-                    _databaseManager.InsertTimeRecords(records);
-            }
-            catch (Exception ex)
-            {
-                Logger.Error("FlushPendingWrites error", ex);
+                    var records = new List<TimeRecordData>();
+                    foreach (var kvp in _pendingDbWrite)
+                    {
+                        if (kvp.Value.UsageTime <= 0) continue;
+                        int? categoryId = GetCategoryIdForProcess(kvp.Key);
+                        records.Add(new TimeRecordData
+                        {
+                            ProcessName = kvp.Key,
+                            WindowTitle = kvp.Value.WindowTitle,
+                            UsageTime = kvp.Value.UsageTime,
+                            Date = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture),
+                            DeviceId = _deviceId,
+                            CategoryId = categoryId,
+                            IsForeground = isForeground,
+                            ActivityId = AppSettings.CurrentActivityId
+                        });
+                    }
+                    _pendingDbWrite.Clear();
+
+                    if (records.Count > 0)
+                        _databaseManager.InsertTimeRecords(records);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error("FlushPendingWrites error", ex);
+                }
             }
         }
 

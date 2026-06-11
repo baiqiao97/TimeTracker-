@@ -77,7 +77,10 @@ namespace TimeTracker
                     serverPort = ServerPort,
                     minPasswordLength = MinPasswordLength
                 }, _jsonOptions);
-                File.WriteAllText(ConfigFile, json);
+                // 修复：原子写入，写临时文件再重命名，防止崩溃丢失配置
+                var tempFile = ConfigFile + ".tmp";
+                File.WriteAllText(tempFile, json);
+                File.Move(tempFile, ConfigFile, overwrite: true);
             }
             catch (Exception ex)
             {

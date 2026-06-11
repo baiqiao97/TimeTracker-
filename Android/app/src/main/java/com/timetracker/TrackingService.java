@@ -26,6 +26,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import com.timetracker.database.AppDatabase;
 import com.timetracker.model.Category;
@@ -57,6 +59,9 @@ public class TrackingService extends Service {
 
     /** 分类加载完成前缓冲的记录，加载后批量写入 */
     private final List<PendingRecord> pendingRecords = new ArrayList<>();
+
+    // 修复：使用固定大小线程池替代 new Thread()，避免高频率创建大量线程
+    private final ExecutorService dbExecutor = Executors.newFixedThreadPool(2);
 
     private static final Map<String, String> DEFAULT_PACKAGE_CATEGORIES = new HashMap<>();
     static {
@@ -116,8 +121,7 @@ public class TrackingService extends Service {
                     db.deviceDao().insertOrUpdate(new Device(deviceId, deviceName, "Android",
                             new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(new Date())));
 
-                    // 同时创建默认用户
-                    db.userDao().insertOrUpdate(new User("Default User", deviceId));
+                    // 不再自动创建默认用户，用户通过注册/登录创建
                     Log.d(TAG, "Device registered: " + deviceName + " (" + deviceId + ")");
                 } else {
                     // 更新最后同步时间
@@ -234,6 +238,8 @@ public class TrackingService extends Service {
         if (handler != null && trackingRunnable != null) {
             handler.removeCallbacks(trackingRunnable);
         }
+        // 修复：关闭线程池
+        dbExecutor.shutdown();
     }
 
     private void createNotificationChannel() {
@@ -406,7 +412,7 @@ public class TrackingService extends Service {
     }
 
     private void doInsert(String packageName, String appName, long usageTimeMs, boolean isForeground) {
-        new Thread(() -> {
+        dbExecutor.execute(() -> {
             try {
                 AppDatabase db = AppDatabase.getInstance(getApplicationContext());
                 String deviceId = getDeviceId();
@@ -435,7 +441,7 @@ public class TrackingService extends Service {
             } catch (Exception e) {
                 Log.e(TAG, "Error inserting record", e);
             }
-        }).start();
+        });
     }
 
     private String getAppNameFromPackage(String packageName) {

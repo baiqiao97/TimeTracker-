@@ -20,7 +20,20 @@ const int RateLimitPerMinute = 30;
 const int AuthRateLimitPerMinute = 6;
 
 // ===== 限流 =====
+// 修复：定期清理过期键，防止内存无限增长
 var rateLimitStore = new ConcurrentDictionary<string, (int count, DateTime window)>();
+_ = Task.Run(async () =>
+{
+    while (true)
+    {
+        await Task.Delay(TimeSpan.FromMinutes(2));
+        var now = DateTime.UtcNow;
+        foreach (var key in rateLimitStore.Keys.Where(k => rateLimitStore.TryGetValue(k, out var v) && v.window < now).ToArray())
+        {
+            rateLimitStore.TryRemove(key, out _);
+        }
+    }
+});
 
 string? CheckRateLimit(HttpRequest req, int maxPerMinute)
 {
@@ -107,6 +120,7 @@ app.MapGet("/api/sync/download", (HttpRequest req) =>
     var sql = "SELECT id,process_name,window_title,usage_time,date,device_id,category_id,is_foreground,activity_id FROM time_records WHERE user_id=@uid";
     var prms = new List<(string, object?)> { ("@uid", auth.Value.userId) };
     if (!string.IsNullOrEmpty(since)) { sql += " AND date > @s"; prms.Add(("@s", since)); }
+    // MaxSyncLimit 为 const int，安全拼接
     sql += $" ORDER BY date,id LIMIT {MaxSyncLimit}";
     return Results.Ok(Query(dbPath, sql, prms));
 });
@@ -157,7 +171,7 @@ app.MapGet("/api/sync/todos/download", (HttpRequest req) =>
     var sql = "SELECT id,title,description,is_completed,priority,due_date,created_at,completed_at,device_id FROM todo_items WHERE user_id=@uid";
     var prms = new List<(string, object?)> { ("@uid", auth.Value.userId) };
     if (!string.IsNullOrEmpty(since)) { sql += " AND created_at > @s"; prms.Add(("@s", since)); }
-    sql += " ORDER BY id LIMIT " + MaxSyncLimit;
+    sql += " ORDER BY id LIMIT " + MaxSyncLimit.ToString(CultureInfo.InvariantCulture);
     return Results.Ok(Query(dbPath, sql, prms));
 });
 
@@ -188,7 +202,7 @@ app.MapGet("/api/sync/schedules/download", (HttpRequest req) =>
     var sql = "SELECT id,title,description,start_time,end_time,is_all_day,color,created_at,device_id FROM schedules WHERE user_id=@uid";
     var prms = new List<(string, object?)> { ("@uid", auth.Value.userId) };
     if (!string.IsNullOrEmpty(since)) { sql += " AND created_at > @s"; prms.Add(("@s", since)); }
-    sql += " ORDER BY start_time,id LIMIT " + MaxSyncLimit;
+    sql += " ORDER BY start_time,id LIMIT " + MaxSyncLimit.ToString(CultureInfo.InvariantCulture);
     return Results.Ok(Query(dbPath, sql, prms));
 });
 

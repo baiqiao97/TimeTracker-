@@ -219,6 +219,7 @@ namespace TimeTracker
         {
             using var c = new System.Data.SQLite.SQLiteConnection($"Data Source={DbPath};Version=3;");
             c.Open();
+            // CA2100: 安全 — 调用方传入的 SQL 均为硬编码常量，参数使用 AddWithValue 参数化
 #pragma warning disable CA2100
             using var cmd = new System.Data.SQLite.SQLiteCommand(sql, c);
 #pragma warning restore CA2100
@@ -231,6 +232,7 @@ namespace TimeTracker
         {
             using var c = new System.Data.SQLite.SQLiteConnection($"Data Source={DbPath};Version=3;");
             c.Open();
+            // CA2100: 安全 — 调用方传入的 SQL 均为硬编码常量，参数使用 AddWithValue 参数化
 #pragma warning disable CA2100
             using var cmd = new System.Data.SQLite.SQLiteCommand(sql, c);
 #pragma warning restore CA2100

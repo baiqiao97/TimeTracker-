@@ -12,6 +12,9 @@ public interface UserDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insertOrUpdate(User user);
 
-    @Query("SELECT * FROM users WHERE deviceId = :deviceId LIMIT 1")
-    User getUserByDevice(String deviceId);
+    @Query("SELECT * FROM users WHERE username = :username LIMIT 1")
+    User getUserByUsername(String username);
+
+    @Query("SELECT * FROM users WHERE token = :token LIMIT 1")
+    User getUserByToken(String token);
 }
