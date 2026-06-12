@@ -32,6 +32,9 @@ namespace TimeTracker
             RefreshActivitySelector();
             try { SetupTrayIcon(); } catch (Exception ex) { Logger.Error("Failed to setup tray icon", ex); }
             try { AppSettings.ApplyAutoStart(); } catch (Exception ex) { Logger.Error("Failed to apply autostart", ex); }
+            try { GlobalHotkeyManager.Register(this,
+                () => { if (Visibility == Visibility.Visible) { Hide(); } else { Show(); WindowState = WindowState.Normal; Activate(); } },
+                () => _trackingService?.TogglePause()); } catch { }
             SetupServerAndSync();
         }
 
@@ -1223,6 +1226,7 @@ namespace TimeTracker
         {
             _syncTimer?.Stop();
             EmbeddedServer.Stop();
+            GlobalHotkeyManager.Unregister();
             _trackingService?.Dispose();
             base.OnClosed(e);
         }
