@@ -23,6 +23,7 @@ namespace TimeTracker
             InitializeComponent();
             _allPanels = new UIElement[] { statsPanel, ((UIElement)actionPanel), contentBorder, todoPanel, schedulePanel };
             AppSettings.Load();
+            ThemeHelper.Apply(AppSettings.DarkMode);
             _databaseManager = new DatabaseManager();
             InitializeDefaultCategories();
             RegisterDevice();

@@ -23,6 +23,7 @@ namespace TimeTracker
         public static bool HostServer { get; set; } = false;
         public static int ServerPort { get; set; } = 5080;
         public static int MinPasswordLength { get; set; } = 6;
+        public static bool DarkMode { get; set; } = false;
         public static DateTime LastSyncTime { get; set; } = DateTime.MinValue;
 
         private static readonly JsonSerializerOptions _jsonOptions = new()
@@ -50,6 +51,7 @@ namespace TimeTracker
                     if (r.TryGetProperty("hostServer", out var hs)) HostServer = hs.GetBoolean();
                     if (r.TryGetProperty("serverPort", out var sp)) ServerPort = sp.GetInt32();
                     if (r.TryGetProperty("minPasswordLength", out var mpl)) MinPasswordLength = Math.Max(1, mpl.GetInt32());
+                    if (r.TryGetProperty("darkMode", out var dm)) DarkMode = dm.GetBoolean();
                 }
             }
             catch (Exception ex)
@@ -75,7 +77,8 @@ namespace TimeTracker
                     authToken = AuthToken,
                     hostServer = HostServer,
                     serverPort = ServerPort,
-                    minPasswordLength = MinPasswordLength
+                    minPasswordLength = MinPasswordLength,
+                    darkMode = DarkMode
                 }, _jsonOptions);
                 // 修复：原子写入，写临时文件再重命名，防止崩溃丢失配置
                 var tempFile = ConfigFile + ".tmp";

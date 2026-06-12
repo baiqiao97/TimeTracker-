@@ -75,6 +75,7 @@ namespace TimeTracker
             txtInterval.Text = TrackingIntervalSeconds.ToString(CultureInfo.InvariantCulture);
             txtRetentionDays.Text = RetentionDays.ToString(CultureInfo.InvariantCulture);
             chkAutoStart.IsChecked = AutoStart;
+            chkDarkMode.IsChecked = AppSettings.DarkMode;
             rbSimple.IsChecked = true;
             txtServerUrl.Text = AppSettings.ServerUrl;
             chkAutoSync.IsChecked = AppSettings.AutoSync;
@@ -156,6 +157,8 @@ namespace TimeTracker
             if (int.TryParse(txtMinPwdLen.Text, out int mpl) && mpl >= 1) MinPasswordLength = mpl;
 
             // 同步到全局 AppSettings
+            AutoStart = chkAutoStart.IsChecked ?? false;
+            AppSettings.DarkMode = chkDarkMode.IsChecked ?? false;
             AppSettings.MinPasswordLength = MinPasswordLength;
 
             try
@@ -186,6 +189,13 @@ namespace TimeTracker
         {
             DialogResult = false;
             Close();
+        }
+
+        private void ChkDarkMode_Click(object sender, RoutedEventArgs e)
+        {
+            AppSettings.DarkMode = chkDarkMode.IsChecked ?? false;
+            ThemeHelper.Apply(AppSettings.DarkMode);
+            AppSettings.Save();
         }
 
         private void BtnCleanOld_Click(object sender, RoutedEventArgs e)
