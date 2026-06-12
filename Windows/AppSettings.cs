@@ -24,6 +24,7 @@ namespace TimeTracker
         public static int ServerPort { get; set; } = 5080;
         public static int MinPasswordLength { get; set; } = 6;
         public static bool DarkMode { get; set; } = false;
+        public static int DailyLimitMinutes { get; set; } = 0; // 0=关闭
         public static DateTime LastSyncTime { get; set; } = DateTime.MinValue;
 
         private static readonly JsonSerializerOptions _jsonOptions = new()
