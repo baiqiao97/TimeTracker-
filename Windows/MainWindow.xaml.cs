@@ -21,7 +21,7 @@ namespace TimeTracker
         public MainWindow()
         {
             InitializeComponent();
-            _allPanels = new UIElement[] { statsPanel, actionPanel, contentBorder, todoPanel, schedulePanel };
+            _allPanels = new UIElement[] { statsPanel, ((UIElement)actionPanel), contentBorder, todoPanel, schedulePanel };
             AppSettings.Load();
             _databaseManager = new DatabaseManager();
             InitializeDefaultCategories();
@@ -333,6 +333,27 @@ namespace TimeTracker
             await FadeRefreshContentAsync(() => { LoadStats(); ShowForegroundStats(); });
         }
 
+        private System.Collections.IList? _currentData;
+        private void TxtSearch_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            var filter = txtSearch.Text.Trim().ToLower();
+            if (_currentData == null) return;
+
+            if (string.IsNullOrEmpty(filter)) { dataGrid.ItemsSource = _currentData; return; }
+
+            var filtered = _currentData.OfType<object>().Where(item =>
+            {
+                foreach (var prop in item.GetType().GetProperties())
+                {
+                    var val = prop.GetValue(item)?.ToString() ?? "";
+                    if (val.Contains(filter, StringComparison.OrdinalIgnoreCase)) return true;
+                }
+                return false;
+            }).ToList();
+
+            dataGrid.ItemsSource = filtered;
+        }
+        
         private void RefreshChartIfVisible()
         {
             if (chartBorder.Visibility == Visibility.Visible)
@@ -461,7 +482,8 @@ namespace TimeTracker
                 };
             }).ToList();
 
-            dataGrid.ItemsSource = data;
+            _currentData = data;
+            dataGrid.ItemsSource = _currentData;
             AnimateRowsIn();
             dataGrid.SelectedIndex = 0;
         }
@@ -499,6 +521,7 @@ namespace TimeTracker
                 UsageTime = FormatMs(s.TotalUsage)
             }).ToList();
 
+            _currentData = data;
             dataGrid.ItemsSource = data;
             AnimateRowsIn();
         }
@@ -516,6 +539,7 @@ namespace TimeTracker
                 UsageDisplay = FormatMs(s.TotalUsage)
             }).ToList();
 
+            _currentData = data;
             dataGrid.ItemsSource = data;
             AnimateRowsIn();
         }
@@ -533,6 +557,7 @@ namespace TimeTracker
                 UsageTime = FormatMs(s.TotalUsage)
             }).ToList();
 
+            _currentData = data;
             dataGrid.ItemsSource = data;
             AnimateRowsIn();
         }

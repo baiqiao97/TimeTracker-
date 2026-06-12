@@ -704,14 +704,27 @@
                         </Grid>
 
                         <!-- Action Buttons Row -->
-                        <StackPanel x:Name="actionPanel" Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,16">
-                            <Button Content="每日" x:Name="btnActionDaily" Style="{StaticResource TagBtn}" Margin="0,0,6,0" Click="ActionDaily_Click"/>
-                            <Button Content="每周" Style="{StaticResource TagBtn}" Margin="0,0,6,0" Click="ActionWeekly_Click"/>
-                            <Button Content="每月" Style="{StaticResource TagBtn}" Margin="0,0,6,0" Click="ActionMonthly_Click"/>
-                            <Button Content="分类统计" Style="{StaticResource TagBtn}" Margin="0,0,6,0" Click="ActionCategory_Click"/>
-                            <Button Content="前台/后台" Style="{StaticResource TagBtn}" Click="ActionForeground_Click"/>
-                            <Button Content="📊 图表" Style="{StaticResource PrimaryBtn}" Margin="16,0,0,0" Click="ActionChart_Click"/>
-                        </StackPanel>
+                        <Grid x:Name="actionPanel" Grid.Row="1" Margin="0,0,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="每日" x:Name="btnActionDaily" Style="{StaticResource TagBtn}" Margin="0,0,6,0" Click="ActionDaily_Click"/>
+                                <Button Content="每周" Style="{StaticResource TagBtn}" Margin="0,0,6,0" Click="ActionWeekly_Click"/>
+                                <Button Content="每月" Style="{StaticResource TagBtn}" Margin="0,0,6,0" Click="ActionMonthly_Click"/>
+                                <Button Content="分类统计" Style="{StaticResource TagBtn}" Margin="0,0,6,0" Click="ActionCategory_Click"/>
+                                <Button Content="前台/后台" Style="{StaticResource TagBtn}" Click="ActionForeground_Click"/>
+                                <Button Content="📊 图表" Style="{StaticResource PrimaryBtn}" Margin="16,0,0,0" Click="ActionChart_Click"/>
+                            </StackPanel>
+                            <Border Grid.Column="1" Background="#f9fafb" CornerRadius="8" Padding="2,0"
+                                    BorderBrush="#e5e7eb" BorderThickness="1" Width="200">
+                                <TextBox x:Name="txtSearch" FontSize="12" Padding="8,6"
+                                         Background="Transparent" BorderThickness="0"
+                                         TextChanged="TxtSearch_TextChanged"
+                                         ToolTip="搜索应用名、标签、窗口标题"/>
+                            </Border>
+                        </Grid>
 
                         <!-- Data Table Card -->
                         <Border x:Name="contentBorder" Grid.Row="2" Background="{StaticResource CardBg}" CornerRadius="16" Padding="6"
