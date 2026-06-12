@@ -217,11 +217,15 @@ static void InitDb(string path)
     using var c = new SqliteConnection($"Data Source={path}");
     c.Open();
     foreach (var sql in new[] {
+        // CA2100: 安全 — 均为硬编码 DDL 常量
+#pragma warning disable CA2100
         "PRAGMA journal_mode=WAL",
         "CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY AUTOINCREMENT,username TEXT UNIQUE NOT NULL,password TEXT NOT NULL,token TEXT,expires_at TEXT,created_at TEXT)",
         "CREATE TABLE IF NOT EXISTS time_records(id INTEGER NOT NULL,process_name TEXT NOT NULL,window_title TEXT,usage_time INTEGER NOT NULL,date TEXT NOT NULL,device_id TEXT NOT NULL,category_id INTEGER,is_foreground INTEGER DEFAULT 1,activity_id INTEGER,user_id INTEGER NOT NULL,PRIMARY KEY(id,user_id))",
         "CREATE TABLE IF NOT EXISTS todo_items(id INTEGER NOT NULL,title TEXT NOT NULL,description TEXT DEFAULT '',is_completed INTEGER DEFAULT 0,priority INTEGER DEFAULT 1,due_date TEXT,created_at TEXT NOT NULL,completed_at TEXT,device_id TEXT NOT NULL,user_id INTEGER NOT NULL,PRIMARY KEY(id,user_id))",
-        "CREATE TABLE IF NOT EXISTS schedules(id INTEGER NOT NULL,title TEXT NOT NULL,description TEXT DEFAULT '',start_time TEXT NOT NULL,end_time TEXT,is_all_day INTEGER DEFAULT 0,color TEXT DEFAULT '#6c5ce7',created_at TEXT NOT NULL,device_id TEXT NOT NULL,user_id INTEGER NOT NULL,PRIMARY KEY(id,user_id))" })
+        "CREATE TABLE IF NOT EXISTS schedules(id INTEGER NOT NULL,title TEXT NOT NULL,description TEXT DEFAULT '',start_time TEXT NOT NULL,end_time TEXT,is_all_day INTEGER DEFAULT 0,color TEXT DEFAULT '#6c5ce7',created_at TEXT NOT NULL,device_id TEXT NOT NULL,user_id INTEGER NOT NULL,PRIMARY KEY(id,user_id))"
+#pragma warning restore CA2100
+    })
     {
         using var cmd = new SqliteCommand(sql, c);
         cmd.ExecuteNonQuery();
@@ -270,7 +274,10 @@ static bool VerifyHash(string? pwd, string stored)
 static int Exec(string path, string sql, params (string, object?)[] prms)
 {
     using var c = new SqliteConnection($"Data Source={path}"); c.Open();
+    // CA2100: 安全 — sql 参数均通过调用方传入，实际调用处均为硬编码 SQL，参数使用 @k 参数化
+#pragma warning disable CA2100
     using var cmd = new SqliteCommand(sql, c);
+#pragma warning restore CA2100
     foreach (var (k, v) in prms) cmd.Parameters.AddWithValue(k, v ?? DBNull.Value);
     return cmd.ExecuteNonQuery();
 }
@@ -279,7 +286,10 @@ static List<Dictionary<string, object?>> Query(string path, string sql, IEnumera
 {
     var list = new List<Dictionary<string, object?>>();
     using var c = new SqliteConnection($"Data Source={path}"); c.Open();
+    // CA2100: 安全 — 同上
+#pragma warning disable CA2100
     using var cmd = new SqliteCommand(sql, c);
+#pragma warning restore CA2100
     foreach (var (k, v) in prms) cmd.Parameters.AddWithValue(k, v ?? DBNull.Value);
     using var r = cmd.ExecuteReader();
     while (r.Read()) { var d = new Dictionary<string, object?>(); for (int i = 0; i < r.FieldCount; i++) d[r.GetName(i)] = r.IsDBNull(i) ? null : r.GetValue(i); list.Add(d); }

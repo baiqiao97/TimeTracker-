@@ -42,9 +42,10 @@ namespace TimeTracker
                     "CREATE TABLE IF NOT EXISTS time_records (id INTEGER PRIMARY KEY AUTOINCREMENT, process_name TEXT NOT NULL, window_title TEXT, usage_time INTEGER NOT NULL, date TEXT NOT NULL, device_id TEXT NOT NULL, category_id INTEGER DEFAULT NULL, is_foreground INTEGER DEFAULT 1, activity_id INTEGER DEFAULT NULL, user_id INTEGER DEFAULT NULL)",
                     "CREATE TABLE IF NOT EXISTS devices (device_id TEXT PRIMARY KEY, device_name TEXT NOT NULL, platform TEXT NOT NULL, last_sync TEXT)",
                     "CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE NOT NULL, password TEXT NOT NULL, token TEXT, expires_at TEXT, created_at TEXT)",
-                    "CREATE TABLE IF NOT EXISTS activities (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, color TEXT DEFAULT '#6c5ce7', icon TEXT DEFAULT '📌')",
+                    "CREATE TABLE IF NOT EXISTS activities (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, color TEXT DEFAULT '#6c5ce7', icon TEXT DEFAULT '\U0001f4cc')",
                     "CREATE TABLE IF NOT EXISTS todo_items (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, description TEXT DEFAULT '', is_completed INTEGER DEFAULT 0, priority INTEGER DEFAULT 1, due_date TEXT, created_at TEXT NOT NULL, completed_at TEXT, device_id TEXT NOT NULL, user_id INTEGER DEFAULT NULL)",
-                    "CREATE TABLE IF NOT EXISTS schedules (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, description TEXT DEFAULT '', start_time TEXT NOT NULL, end_time TEXT, is_all_day INTEGER DEFAULT 0, color TEXT DEFAULT '#6c5ce7', created_at TEXT NOT NULL, device_id TEXT NOT NULL, user_id INTEGER DEFAULT NULL)"
+                    "CREATE TABLE IF NOT EXISTS schedules (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, description TEXT DEFAULT '', start_time TEXT NOT NULL, end_time TEXT, is_all_day INTEGER DEFAULT 0, color TEXT DEFAULT '#6c5ce7', created_at TEXT NOT NULL, device_id TEXT NOT NULL, user_id INTEGER DEFAULT NULL)",
+                    "CREATE TABLE IF NOT EXISTS manual_records (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, description TEXT DEFAULT '', start_time TEXT NOT NULL, duration_minutes INTEGER DEFAULT 0, category_id INTEGER DEFAULT NULL, activity_id INTEGER DEFAULT NULL, user_id INTEGER DEFAULT NULL, created_at TEXT NOT NULL)"
                 ];
 
                 // CA2100: 安全 — tables 数组中的 SQL 均为硬编码 DDL 常量，无可注入的用户输入
@@ -217,7 +218,7 @@ namespace TimeTracker
             return list;
         }
 
-        public void AddActivity(string name, string color = "#6c5ce7", string icon = "📌")
+        public void AddActivity(string name, string color = "#6c5ce7", string icon = "\U0001f4cc")
         {
             const string q = "INSERT INTO activities (name, color, icon) VALUES (@n, @c, @i)";
             using var c = CreateConnection();
@@ -663,6 +664,73 @@ namespace TimeTracker
                 UserId = r["user_id"] != DBNull.Value ? Convert.ToInt32(r["user_id"], CultureInfo.InvariantCulture) : null
             };
         }
+
+        // ===== Manual Records CRUD =====
+
+        public void InsertManualRecord(string title, string description, string startTime, int durationMinutes,
+            int? categoryId, int? activityId, int? userId)
+        {
+            const string sql = "INSERT INTO manual_records(title,description,start_time,duration_minutes,category_id,activity_id,user_id,created_at) VALUES(@t,@d,@st,@dm,@ci,@ai,@ui,@ca)";
+            using var conn = CreateConnection();
+            using var cmd = new SQLiteCommand(sql, conn);
+            cmd.Parameters.AddWithValue("@t", title);
+            cmd.Parameters.AddWithValue("@d", description);
+            cmd.Parameters.AddWithValue("@st", startTime);
+            cmd.Parameters.AddWithValue("@dm", durationMinutes);
+            cmd.Parameters.AddWithValue("@ci", categoryId.HasValue ? categoryId.Value : DBNull.Value);
+            cmd.Parameters.AddWithValue("@ai", activityId.HasValue ? activityId.Value : DBNull.Value);
+            cmd.Parameters.AddWithValue("@ui", userId.HasValue ? userId.Value : DBNull.Value);
+            cmd.Parameters.AddWithValue("@ca", DateTime.Now.ToString(DateFormat, CultureInfo.InvariantCulture));
+            cmd.ExecuteNonQuery();
+        }
+
+        public void DeleteManualRecord(int id)
+        {
+            const string sql = "DELETE FROM manual_records WHERE id=@id";
+            using var conn = CreateConnection();
+            using var cmd = new SQLiteCommand(sql, conn);
+            cmd.Parameters.AddWithValue("@id", id);
+            cmd.ExecuteNonQuery();
+        }
+
+        public List<ManualRecordData> GetManualRecords(DateTime? from = null, DateTime? to = null, int? userId = null)
+        {
+            var result = new List<ManualRecordData>();
+            var sql = "SELECT mr.* FROM manual_records mr";
+            var conditions = new List<string>();
+            if (from.HasValue) conditions.Add("mr.start_time >= @from");
+            if (to.HasValue) conditions.Add("mr.start_time <= @to");
+            if (userId.HasValue) conditions.Add("mr.user_id=@ui");
+            if (conditions.Count > 0) sql += " WHERE " + string.Join(" AND ", conditions);
+            sql += " ORDER BY mr.start_time DESC";
+            using var conn = CreateConnection();
+            // CA2100: 安全 — sql 中的表名/列名均为硬编码常量，参数使用 @from/@to/@ui 参数化
+#pragma warning disable CA2100
+            using var cmd = new SQLiteCommand(sql, conn);
+#pragma warning restore CA2100
+            if (from.HasValue) cmd.Parameters.AddWithValue("@from", from.Value.ToString(DateFormat, CultureInfo.InvariantCulture));
+            if (to.HasValue) cmd.Parameters.AddWithValue("@to", to.Value.ToString(DateFormat, CultureInfo.InvariantCulture));
+            if (userId.HasValue) cmd.Parameters.AddWithValue("@ui", userId.Value);
+            using var r = cmd.ExecuteReader();
+            while (r.Read()) result.Add(MapManualRecord(r));
+            return result;
+        }
+
+        private static ManualRecordData MapManualRecord(SQLiteDataReader r)
+        {
+            return new ManualRecordData
+            {
+                Id = Convert.ToInt32(r["id"], CultureInfo.InvariantCulture),
+                Title = r["title"].ToString()!,
+                Description = r["description"]?.ToString() ?? "",
+                StartTime = r["start_time"].ToString()!,
+                DurationMinutes = Convert.ToInt32(r["duration_minutes"], CultureInfo.InvariantCulture),
+                CategoryId = r["category_id"] != DBNull.Value ? Convert.ToInt32(r["category_id"], CultureInfo.InvariantCulture) : null,
+                ActivityId = r["activity_id"] != DBNull.Value ? Convert.ToInt32(r["activity_id"], CultureInfo.InvariantCulture) : null,
+                UserId = r["user_id"] != DBNull.Value ? Convert.ToInt32(r["user_id"], CultureInfo.InvariantCulture) : null,
+                CreatedAt = r["created_at"].ToString()!
+            };
+        }
     }
 
     public class TimeRecordData
@@ -685,7 +753,7 @@ namespace TimeTracker
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
         public string Color { get; set; } = "#6c5ce7";
-        public string Icon { get; set; } = "📌";
+        public string Icon { get; set; } = "\U0001f4cc";
     }
 
     public class CategoryData
@@ -749,5 +817,18 @@ namespace TimeTracker
         public string CreatedAt { get; set; } = string.Empty;
         public string DeviceId { get; set; } = string.Empty;
         public int? UserId { get; set; }
+    }
+
+    public class ManualRecordData
+    {
+        public int Id { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string StartTime { get; set; } = string.Empty;
+        public int DurationMinutes { get; set; }
+        public int? CategoryId { get; set; }
+        public int? ActivityId { get; set; }
+        public int? UserId { get; set; }
+        public string CreatedAt { get; set; } = string.Empty;
     }
 }
