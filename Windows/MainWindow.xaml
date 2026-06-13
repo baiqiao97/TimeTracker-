@@ -714,8 +714,9 @@
                                 <Button Content="每周" Style="{StaticResource TagBtn}" Margin="0,0,6,0" Click="ActionWeekly_Click"/>
                                 <Button Content="每月" Style="{StaticResource TagBtn}" Margin="0,0,6,0" Click="ActionMonthly_Click"/>
                                 <Button Content="分类统计" Style="{StaticResource TagBtn}" Margin="0,0,6,0" Click="ActionCategory_Click"/>
-                                <Button Content="前台/后台" Style="{StaticResource TagBtn}" Click="ActionForeground_Click"/>
-                                <Button Content="📊 图表" Style="{StaticResource PrimaryBtn}" Margin="16,0,0,0" Click="ActionChart_Click"/>
+                            <Button Content="前台/后台" Style="{StaticResource TagBtn}" Click="ActionForeground_Click"/>
+                            <Button Content="🕐 时间线" Style="{StaticResource TagBtn}" Margin="0,0,6,0" Click="ActionTimeline_Click"/>
+                            <Button Content="📊 图表" Style="{StaticResource PrimaryBtn}" Margin="16,0,0,0" Click="ActionChart_Click"/>
                             </StackPanel>
                             <Border Grid.Column="1" Background="#f9fafb" CornerRadius="8" Padding="2,0"
                                     BorderBrush="#e5e7eb" BorderThickness="1" Width="200">

@@ -447,6 +447,25 @@ namespace TimeTracker
             return dst;
         }
 
+        /// <summary>按小时汇总（今日时间线）</summary>
+        public List<(int Hour, string ProcessName, long UsageMs)> GetHourlyBreakdown(DateTime date)
+        {
+            var result = new List<(int, string, long)>();
+            var start = date.Date.ToString(DateFormat, CultureInfo.InvariantCulture);
+            var end = date.Date.AddDays(1).ToString(DateFormat, CultureInfo.InvariantCulture);
+            const string q = @"SELECT CAST(substr(date,12,2) AS INTEGER) as hour, process_name, SUM(usage_time) as total
+                FROM time_records WHERE date BETWEEN @s AND @e
+                GROUP BY hour, process_name ORDER BY hour, total DESC";
+            using var c = CreateConnection();
+            using var cmd = new SQLiteCommand(q, c);
+            cmd.Parameters.AddWithValue("@s", start);
+            cmd.Parameters.AddWithValue("@e", end);
+            using var r = cmd.ExecuteReader();
+            while (r.Read())
+                result.Add((Convert.ToInt32(r["hour"], CultureInfo.InvariantCulture), r["process_name"].ToString()!, Convert.ToInt64(r["total"], CultureInfo.InvariantCulture)));
+            return result;
+        }
+
         /// <summary>
         /// 批量获取现有记录的去重键，用于导入去重。统一使用 yyyyMMdd|进程名|设备ID 格式
         /// </summary>

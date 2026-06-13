@@ -337,6 +337,28 @@ namespace TimeTracker
             await FadeRefreshContentAsync(() => { LoadStats(); ShowForegroundStats(); });
         }
 
+        private async void ActionTimeline_Click(object s, RoutedEventArgs e)
+        {
+            SetPage("时间线", "今日各时段应用使用分布");
+            await FadeRefreshContentAsync(() => { LoadStats(); ShowTimeline(); });
+        }
+
+        private async void ShowTimeline()
+        {
+            var hourly = await Task.Run(() => _databaseManager.GetHourlyBreakdown(DateTime.Now.Date));
+            SetupColumns("时段", "HourLabel", "应用", "ProcessDisplay", "时长", "DurationText");
+            var data = Enumerable.Range(0, 24).Select(h =>
+            {
+                var items = hourly.Where(x => x.Hour == h).ToList();
+                var top = items.FirstOrDefault();
+                var total = items.Sum(x => x.UsageMs);
+                return new TimelineItem { HourLabel = $"{h:D2}:00-{h:D2}:59",
+                    ProcessDisplay = top.ProcessName ?? "—",
+                    DurationText = total > 0 ? FormatMs(total) : "—", TotalMs = total };
+            }).ToList();
+            _currentData = data; dataGrid.ItemsSource = data; AnimateRowsIn();
+        }
+
         private System.Collections.IList? _currentData;
         private void TxtSearch_TextChanged(object sender, TextChangedEventArgs e)
         {
@@ -934,7 +956,7 @@ namespace TimeTracker
                 NotificationHelper.Show("导出成功", $"已导出 {count} 条记录\n{dialog.FileName}");
             else
                 NotificationHelper.Show("导出失败", error ?? "未知错误", false);
-            lblCurrentApp.Text = ok ? "导出完成" : "导出失败";
+            lblCurrentApp.Text = ok ? $"导出完成 ✓" : "导出失败 ✗";
         }
 
         private async void DoImport()
@@ -2014,5 +2036,13 @@ namespace TimeTracker
     {
         public string Type { get; set; } = string.Empty;
         public string UsageTime { get; set; } = string.Empty;
+    }
+
+    public class TimelineItem
+    {
+        public string HourLabel { get; set; } = string.Empty;
+        public string ProcessDisplay { get; set; } = string.Empty;
+        public string DurationText { get; set; } = string.Empty;
+        public long TotalMs { get; set; }
     }
 }
