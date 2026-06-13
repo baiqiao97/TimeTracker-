@@ -555,6 +555,7 @@
                                    Foreground="#64748b" Margin="24,0,0,6" TextOptions.TextFormattingMode="Display"/>
                         <Button Content="📥  导入" Style="{StaticResource SidebarBtn}" Click="NavImport_Click"/>
                         <Button Content="📤  导出" Style="{StaticResource SidebarBtn}" Click="NavExport_Click"/>
+                        <Button Content="📄  生成报告" Style="{StaticResource SidebarBtn}" Click="NavReport_Click"/>
                         <Button Content="🔄  同步" Style="{StaticResource SidebarBtn}" Click="NavSync_Click"/>
                         <Button Content="🏷  管理标签" Style="{StaticResource SidebarBtn}" Click="NavManageCategories_Click"/>
                     </StackPanel>
@@ -565,6 +566,7 @@
                                    Foreground="#64748b" Margin="24,0,0,6" TextOptions.TextFormattingMode="Display"/>
                         <Button Content="📥  导入" Style="{StaticResource SidebarBtn}" Click="NavImport_Click"/>
                         <Button Content="📤  导出" Style="{StaticResource SidebarBtn}" Click="NavExport_Click"/>
+                        <Button Content="📄  生成报告" Style="{StaticResource SidebarBtn}" Click="NavReport_Click"/>
                         <Button Content="🔄  同步" Style="{StaticResource SidebarBtn}" Click="NavSync_Click"/>
                         <Button Content="🎯  管理活动" Style="{StaticResource SidebarBtn}" Click="NavManageActivities_Click"/>
                         <Button Content="🏷  管理标签" Style="{StaticResource SidebarBtn}" Click="NavManageCategories_Click"/>

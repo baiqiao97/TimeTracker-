@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.IO;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -312,6 +313,22 @@ namespace TimeTracker
         private void NavImport_Click(object sender, RoutedEventArgs e) => DoImport();
         private void NavExport_Click(object sender, RoutedEventArgs e) => DoExport();
         private void NavSync_Click(object sender, RoutedEventArgs e) => DoSync();
+        private void NavReport_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var report = ReportGenerator.GenerateHtmlReport(
+                    DateTime.Now.AddDays(-7), DateTime.Now, _databaseManager);
+                var path = System.IO.Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+                    $"TimeTracker_Report_{DateTime.Now:yyyyMMdd}.html");
+                File.WriteAllText(path, report, Encoding.UTF8);
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(path) { UseShellExecute = true });
+                NotificationHelper.Show("报告已生成", $"保存到: {System.IO.Path.GetFileName(path)}");
+            }
+            catch (Exception ex) { NotificationHelper.Show("报告生成失败", ex.Message, false); }
+        }
+
         private void NavManageActivities_Click(object sender, RoutedEventArgs e) => ManageActivities();
         private void NavManageCategories_Click(object sender, RoutedEventArgs e) => ManageCategories();
         private void NavSettings_Click(object sender, RoutedEventArgs e) => OpenSettings();
