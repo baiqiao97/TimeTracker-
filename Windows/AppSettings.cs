@@ -8,9 +8,17 @@ namespace TimeTracker
     /// </summary>
     public static class AppSettings
     {
-        private static readonly string ConfigDir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "TimeTracker");
-        private static readonly string ConfigFile = Path.Combine(ConfigDir, "settings.json");
+        public static bool IsPortable { get; private set; } = false;
+        private static string ConfigDir => IsPortable
+            ? AppDomain.CurrentDomain.BaseDirectory
+            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "TimeTracker");
+        private static string ConfigFile => Path.Combine(ConfigDir, "settings.json");
+
+        public static void InitPortable(string[] args)
+        {
+            if (args.Any(a => a.Equals("--portable", StringComparison.OrdinalIgnoreCase)))
+                IsPortable = true;
+        }
 
         public static int TrackingIntervalSeconds { get; set; } = 2;
         public static int RetentionDays { get; set; } = 90;
@@ -24,7 +32,9 @@ namespace TimeTracker
         public static int ServerPort { get; set; } = 5080;
         public static int MinPasswordLength { get; set; } = 6;
         public static bool DarkMode { get; set; } = false;
-        public static int DailyLimitMinutes { get; set; } = 0; // 0=关闭
+        public static int DailyLimitMinutes { get; set; } = 0;
+        public static bool AutoExportEnabled { get; set; } = false;
+        public static int AutoExportIntervalMinutes { get; set; } = 1440; // 默认24小时
         public static DateTime LastSyncTime { get; set; } = DateTime.MinValue;
 
         private static readonly JsonSerializerOptions _jsonOptions = new()

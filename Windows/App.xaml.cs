@@ -8,6 +8,9 @@ namespace TimeTracker
         {
             base.OnStartup(e);
 
+            // 便携模式检测（--portable 参数）
+            AppSettings.InitPortable(e.Args);
+
             // 全局未捕获异常处理 — 防止静默崩溃
             DispatcherUnhandledException += (s, args) =>
             {

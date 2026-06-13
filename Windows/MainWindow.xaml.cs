@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -33,6 +34,16 @@ namespace TimeTracker
             RefreshActivitySelector();
             try { SetupTrayIcon(); } catch (Exception ex) { Logger.Error("Failed to setup tray icon", ex); }
             try { AppSettings.ApplyAutoStart(); } catch (Exception ex) { Logger.Error("Failed to apply autostart", ex); }
+            // 首次运行引导
+            var settingsPath = AppSettings.IsPortable
+                ? System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "settings.json")
+                : System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "TimeTracker", "settings.json");
+            if (!File.Exists(settingsPath))
+            {
+                var onboarding = new OnboardingWindow();
+                onboarding.ShowDialog();
+            }
+
             try { GlobalHotkeyManager.Register(this,
                 () => { if (Visibility == Visibility.Visible) { Hide(); } else { Show(); WindowState = WindowState.Normal; Activate(); } },
                 () => _trackingService?.TogglePause()); } catch { }
@@ -1119,11 +1130,13 @@ namespace TimeTracker
         // ======================== SERVER + SYNC ========================
         private System.Timers.Timer? _syncTimer;
         private System.Timers.Timer? _backupTimer;
+        private System.Timers.Timer? _autoExportTimer;
 
         private void SetupServerAndSync()
         {
             _syncTimer?.Stop();
             _backupTimer?.Stop();
+            _autoExportTimer?.Stop();
 
             // 每日自动备份（24小时）
             _backupTimer = new System.Timers.Timer(24 * 3600 * 1000);
@@ -1132,13 +1145,32 @@ namespace TimeTracker
                 try
                 {
                     var path = DatabaseManager.BackupDatabase();
-                    if (!string.IsNullOrEmpty(path))
-                        Logger.Info($"Database backed up: {path}");
+                    if (!string.IsNullOrEmpty(path)) Logger.Info($"Database backed up: {path}");
                 }
                 catch (Exception ex) { Logger.Error("Auto backup failed", ex); }
             };
             _backupTimer.AutoReset = true;
             _backupTimer.Start();
+
+            // 定时自动导出
+            if (AppSettings.AutoExportEnabled && AppSettings.AutoExportIntervalMinutes > 0)
+            {
+                _autoExportTimer = new System.Timers.Timer(AppSettings.AutoExportIntervalMinutes * 60 * 1000);
+                _autoExportTimer.Elapsed += (_, _) =>
+                {
+                    try
+                    {
+                        var dir = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "TimeTracker", "Exports");
+                        Directory.CreateDirectory(dir);
+                        var path = System.IO.Path.Combine(dir, $"TimeTracker_auto_{DateTime.Now:yyyyMMdd_HHmm}.json");
+                        DataSyncUtils.ExportData(_databaseManager, path);
+                        Logger.Info($"Auto-exported to: {path}");
+                    }
+                    catch (Exception ex) { Logger.Error("Auto export failed", ex); }
+                };
+                _autoExportTimer.AutoReset = true;
+                _autoExportTimer.Start();
+            }
 
             _syncTimer?.Stop();
 
@@ -1283,6 +1315,7 @@ namespace TimeTracker
         {
             _syncTimer?.Stop();
             _backupTimer?.Stop();
+            _autoExportTimer?.Stop();
             EmbeddedServer.Stop();
             GlobalHotkeyManager.Unregister();
             _trackingService?.Dispose();
@@ -1482,7 +1515,7 @@ namespace TimeTracker
                 if (sweep <= 0) continue;
 
                 var color = ChartColors[i % ChartColors.Length];
-                var arcPath = new Path
+                var arcPath = new System.Windows.Shapes.Path
                 {
                     Fill = new SolidColorBrush(color),
                     Opacity = 0

@@ -16,7 +16,10 @@ namespace TimeTracker
 
         public DatabaseManager(string dbPath = "time_tracker.db")
         {
-            _dbPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, dbPath);
+            var dir = AppSettings.IsPortable ? AppDomain.CurrentDomain.BaseDirectory
+                : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "TimeTracker");
+            if (!AppSettings.IsPortable) Directory.CreateDirectory(dir);
+            _dbPath = Path.Combine(dir, dbPath);
             EnsureInitialized();
         }
 
