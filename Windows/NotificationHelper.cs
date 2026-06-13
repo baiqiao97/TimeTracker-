@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 
@@ -10,10 +11,16 @@ namespace TimeTracker
     /// </summary>
     public static class NotificationHelper
     {
-        public static async void Show(string title, string message, bool isSuccess = true)
+        public static async void Show(string title, string message, bool isSuccess = true, Action? onUndo = null)
+        {
+            await ShowInternal(title, message, isSuccess, onUndo);
+        }
+
+        private static async Task ShowInternal(string title, string message, bool isSuccess, Action? onUndo = null)
         {
             try
             {
+                Window? popup = null;
                 var accentGreen = new SolidColorBrush(Color.FromRgb(0x10, 0xb9, 0x81));
                 var accentRed = new SolidColorBrush(Color.FromRgb(0xef, 0x44, 0x44));
                 var accent = isSuccess ? accentGreen : accentRed;
@@ -73,6 +80,24 @@ namespace TimeTracker
                 contentPanel.Children.Add(iconCircle);
                 contentPanel.Children.Add(titleBlock);
                 contentPanel.Children.Add(msgBlock);
+
+                // 撤销按钮
+                if (onUndo != null)
+                {
+                    var undoBtn = new Button
+                    {
+                        Content = "↩ 撤销",
+                        FontSize = 12, FontWeight = FontWeights.SemiBold,
+                        Foreground = new SolidColorBrush(Color.FromRgb(0x6c, 0x5c, 0xe7)),
+                        Background = Brushes.Transparent, BorderThickness = new Thickness(0),
+                        Cursor = Cursors.Hand, Margin = new Thickness(0, 0, 0, 10),
+                        HorizontalAlignment = HorizontalAlignment.Center
+                    };
+                    var undoAction = onUndo;
+                    undoBtn.Click += (_, _) => { undoAction(); popup?.Close(); };
+                    contentPanel.Children.Add(undoBtn);
+                }
+
                 contentPanel.Children.Add(progressBar);
 
                 var cardBorder = new Border
@@ -95,7 +120,7 @@ namespace TimeTracker
                 cardBorder.RenderTransformOrigin = new Point(0.5, 0.5);
                 cardBorder.Opacity = 0;
 
-                var popup = new Window
+                popup = new Window
                 {
                     Width = 340,
                     Height = 210,

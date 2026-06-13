@@ -177,6 +177,7 @@ namespace TimeTracker
             {
                 if (cb.SelectedValue is int catId && catId > 0)
                 {
+                    var oldName = item.CategoryName;
                     item.CategoryName = _allCategories.FirstOrDefault(c => c.Id == catId)?.Name ?? "未分类";
 
                     // 1. 持久化到追踪服务（新记录自动分类）
@@ -185,8 +186,17 @@ namespace TimeTracker
                     // 2. 回写数据库已有记录
                     int updated = _db.UpdateProcessCategory(item.ProcessName, catId);
 
+                    var newName = item.CategoryName;
+                    var oldCatId = _allCategories.FirstOrDefault(c => c.Name == oldName)?.Id;
                     NotificationHelper.Show("标签已分配",
-                        $"已更新 {updated} 条记录\n\"{item.DisplayName}\" → {item.CategoryName}");
+                        $"已更新 {updated} 条记录\n\"{item.DisplayName}\" → {item.CategoryName}",
+                        onUndo: () =>
+                        {
+                            item.CategoryName = oldName;
+                            cb.SelectedValue = oldCatId ?? -1;
+                            _db.UpdateProcessCategory(item.ProcessName, oldCatId ?? 0);
+                            NotificationHelper.Show("已撤销", $"\"{item.DisplayName}\" 恢复为 {oldName}");
+                        });
                 }
             }
         }

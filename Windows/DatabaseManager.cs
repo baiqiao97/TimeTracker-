@@ -433,6 +433,20 @@ namespace TimeTracker
             command.ExecuteNonQuery();
         }
 
+        public static string BackupDatabase(string? backupDir = null)
+        {
+            var src = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "time_tracker.db");
+            if (!File.Exists(src)) return "";
+
+            var dir = backupDir ?? Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "TimeTracker", "Backups");
+            Directory.CreateDirectory(dir);
+
+            var dst = Path.Combine(dir, $"time_tracker_backup_{DateTime.Now:yyyyMMdd_HHmmss}.db");
+            File.Copy(src, dst, true);
+            return dst;
+        }
+
         /// <summary>
         /// 批量获取现有记录的去重键，用于导入去重。统一使用 yyyyMMdd|进程名|设备ID 格式
         /// </summary>

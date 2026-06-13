@@ -30,8 +30,6 @@ namespace TimeTracker
         private DateTime _idlePauseSince;
         private bool _idlePaused;
         private DateTime _idleSuppressUntil = DateTime.MinValue;
-        private long _todayTotalMs;
-        private bool _dailyLimitFired;
         private CancellationTokenSource? _cancellationTokenSource;
         private readonly Task _trackingTask;
         private string _currentProcessName = string.Empty;
@@ -50,7 +48,6 @@ namespace TimeTracker
         public bool IsPaused => _isPaused || _idlePaused;
         public event Action<string>? StatusUpdated;
         public event Action<bool>? PauseStateChanged;
-        public event Action<int>? DailyLimitExceeded;
 
         public TrackingService(DatabaseManager databaseManager, int intervalSeconds = 2)
         {

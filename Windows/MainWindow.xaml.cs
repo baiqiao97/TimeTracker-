@@ -878,6 +878,9 @@ namespace TimeTracker
                 {
                     if (selectedCatId is int catId && catId > 0)
                     {
+                        var oldCategory = item.Category;
+                        var oldColor = item.CatColor;
+                        var oldCatId = cats.FirstOrDefault(c => c.Name == oldCategory)?.Id;
                         var cat = cats.FirstOrDefault(c => c.Id == catId);
                         item.Category = cat?.Name ?? "未分类";
                         item.CatColor = cat != null ? GetCatColor(cat.Name) : Brushes.Gray;
@@ -888,7 +891,18 @@ namespace TimeTracker
 
                         await AnimatedClose();
                         NotificationHelper.Show("标签已分配",
-                            $"已更新 {updated} 条记录\n\"{displayName}\" → {item.Category}");
+                            $"已更新 {updated} 条记录\n\"{displayName}\" → {item.Category}",
+                            onUndo: () =>
+                            {
+                                item.Category = oldCategory;
+                                item.CatColor = oldColor;
+                                if (oldCatId.HasValue)
+                                    _databaseManager.UpdateProcessCategory(item.ProcessName, oldCatId.Value);
+                                else
+                                    _databaseManager.UpdateProcessCategory(item.ProcessName, 0);
+                                dataGrid.Items.Refresh();
+                                NotificationHelper.Show("已撤销", $"\"{displayName}\" 恢复为 {oldCategory}");
+                            });
                     }
                     else
                     {
@@ -1082,8 +1096,28 @@ namespace TimeTracker
 
         // ======================== SERVER + SYNC ========================
         private System.Timers.Timer? _syncTimer;
+        private System.Timers.Timer? _backupTimer;
+
         private void SetupServerAndSync()
         {
+            _syncTimer?.Stop();
+            _backupTimer?.Stop();
+
+            // 每日自动备份（24小时）
+            _backupTimer = new System.Timers.Timer(24 * 3600 * 1000);
+            _backupTimer.Elapsed += (_, _) =>
+            {
+                try
+                {
+                    var path = DatabaseManager.BackupDatabase();
+                    if (!string.IsNullOrEmpty(path))
+                        Logger.Info($"Database backed up: {path}");
+                }
+                catch (Exception ex) { Logger.Error("Auto backup failed", ex); }
+            };
+            _backupTimer.AutoReset = true;
+            _backupTimer.Start();
+
             _syncTimer?.Stop();
 
             // 1. 本机作为服务器
@@ -1226,6 +1260,7 @@ namespace TimeTracker
         protected override void OnClosed(EventArgs e)
         {
             _syncTimer?.Stop();
+            _backupTimer?.Stop();
             EmbeddedServer.Stop();
             GlobalHotkeyManager.Unregister();
             _trackingService?.Dispose();
