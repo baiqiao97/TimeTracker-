@@ -20,6 +20,9 @@ namespace TimeTracker
                 : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "TimeTracker");
             if (!AppSettings.IsPortable) Directory.CreateDirectory(dir);
             _dbPath = Path.Combine(dir, dbPath);
+            // 如果设置了 DatabasePassword，使用加密连接
+            if (!string.IsNullOrEmpty(AppSettings.DatabasePassword))
+                _dbPath += $";Password={AppSettings.DatabasePassword}";
             EnsureInitialized();
         }
 

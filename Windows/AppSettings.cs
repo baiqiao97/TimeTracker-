@@ -34,7 +34,8 @@ namespace TimeTracker
         public static bool DarkMode { get; set; } = false;
         public static int DailyLimitMinutes { get; set; } = 0;
         public static bool AutoExportEnabled { get; set; } = false;
-        public static int AutoExportIntervalMinutes { get; set; } = 1440; // 默认24小时
+        public static int AutoExportIntervalMinutes { get; set; } = 1440;
+        public static string DatabasePassword { get; set; } = ""; // 留空=不加密
         public static DateTime LastSyncTime { get; set; } = DateTime.MinValue;
 
         private static readonly JsonSerializerOptions _jsonOptions = new()
