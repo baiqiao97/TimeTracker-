@@ -110,6 +110,22 @@
             </StackPanel>
         </Border>
 
+        <!-- ===== AI 接口 ===== -->
+        <Border Background="{StaticResource CardBg}" CornerRadius="14" Padding="22" Margin="0,0,0,12"
+                Effect="{StaticResource CardShadow}">
+            <StackPanel>
+                <TextBlock Text="🤖 AI 接口" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,10"/>
+                <TextBlock Text="API Key" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,4"/>
+                <TextBox x:Name="txtAiKey" FontSize="13" Padding="10,8" Background="#f9fafb" Margin="0,0,0,6"
+                         ToolTip="OpenAI 或 Anthropic API Key"/>
+                <TextBlock Text="AI 服务商" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,4"/>
+                <StackPanel Orientation="Horizontal">
+                    <RadioButton x:Name="rbAiOpenAI" Content="OpenAI (ChatGPT)" GroupName="aiProvider" Margin="0,0,16,0"/>
+                    <RadioButton x:Name="rbAiAnthropic" Content="Anthropic (Claude)" GroupName="aiProvider"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
         <!-- ===== 追踪模式 ===== -->
         <Border Background="{StaticResource CardBg}" CornerRadius="14" Padding="22" Margin="0,0,0,12"
                 Effect="{StaticResource CardShadow}">

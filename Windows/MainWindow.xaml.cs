@@ -313,6 +313,12 @@ namespace TimeTracker
         private void NavImport_Click(object sender, RoutedEventArgs e) => DoImport();
         private void NavExport_Click(object sender, RoutedEventArgs e) => DoExport();
         private void NavSync_Click(object sender, RoutedEventArgs e) => DoSync();
+        private void NavGoal_Click(object sender, RoutedEventArgs e)
+        {
+            var win = new GoalWindow(_databaseManager) { Owner = this };
+            win.ShowDialog();
+        }
+
         private void NavReport_Click(object sender, RoutedEventArgs e)
         {
             try

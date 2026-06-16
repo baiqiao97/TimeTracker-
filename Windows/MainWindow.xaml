@@ -545,6 +545,7 @@
                     <StackPanel x:Name="panelTools" Grid.Row="2" Margin="0,16,0,0">
                         <TextBlock Text="效率工具" FontSize="10" FontWeight="SemiBold"
                                    Foreground="#64748b" Margin="24,0,0,6" TextOptions.TextFormattingMode="Display"/>
+                        <Button x:Name="btnGoal" Content="🎯 目标管理" Style="{StaticResource SidebarBtn}" Click="NavGoal_Click"/>
                         <Button x:Name="btnTodoList" Content="✅ 待办清单" Style="{StaticResource SidebarBtn}" Click="NavTodoList_Click"/>
                         <Button x:Name="btnSchedule" Content="📅 日程安排" Style="{StaticResource SidebarBtn}" Click="NavSchedule_Click"/>
                     </StackPanel>

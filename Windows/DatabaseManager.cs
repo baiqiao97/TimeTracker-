@@ -51,7 +51,9 @@ namespace TimeTracker
                     "CREATE TABLE IF NOT EXISTS activities (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, color TEXT DEFAULT '#6c5ce7', icon TEXT DEFAULT '\U0001f4cc')",
                     "CREATE TABLE IF NOT EXISTS todo_items (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, description TEXT DEFAULT '', is_completed INTEGER DEFAULT 0, priority INTEGER DEFAULT 1, due_date TEXT, created_at TEXT NOT NULL, completed_at TEXT, device_id TEXT NOT NULL, user_id INTEGER DEFAULT NULL)",
                     "CREATE TABLE IF NOT EXISTS schedules (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, description TEXT DEFAULT '', start_time TEXT NOT NULL, end_time TEXT, is_all_day INTEGER DEFAULT 0, color TEXT DEFAULT '#6c5ce7', created_at TEXT NOT NULL, device_id TEXT NOT NULL, user_id INTEGER DEFAULT NULL)",
-                    "CREATE TABLE IF NOT EXISTS manual_records (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, description TEXT DEFAULT '', start_time TEXT NOT NULL, duration_minutes INTEGER DEFAULT 0, category_id INTEGER DEFAULT NULL, activity_id INTEGER DEFAULT NULL, user_id INTEGER DEFAULT NULL, created_at TEXT NOT NULL)"
+                    "CREATE TABLE IF NOT EXISTS manual_records (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, description TEXT DEFAULT '', start_time TEXT NOT NULL, duration_minutes INTEGER DEFAULT 0, category_id INTEGER DEFAULT NULL, activity_id INTEGER DEFAULT NULL, user_id INTEGER DEFAULT NULL, created_at TEXT NOT NULL)",
+                    "CREATE TABLE IF NOT EXISTS goals (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, description TEXT DEFAULT '', status TEXT DEFAULT 'active', total_minutes_goal INTEGER DEFAULT 0, created_at TEXT NOT NULL, completed_at TEXT, user_id INTEGER DEFAULT NULL)",
+                    "CREATE TABLE IF NOT EXISTS goal_phases (id INTEGER PRIMARY KEY AUTOINCREMENT, goal_id INTEGER NOT NULL, title TEXT NOT NULL, description TEXT DEFAULT '', phase_order INTEGER NOT NULL, estimated_minutes INTEGER DEFAULT 0, actual_minutes INTEGER DEFAULT 0, status TEXT DEFAULT 'pending', effective_ratio REAL DEFAULT 0, user_notes TEXT DEFAULT '', created_at TEXT NOT NULL, completed_at TEXT, FOREIGN KEY(goal_id) REFERENCES goals(id))"
                 ];
 
                 // CA2100: 安全 — tables 数组中的 SQL 均为硬编码 DDL 常量，无可注入的用户输入
@@ -772,6 +774,82 @@ namespace TimeTracker
                 CreatedAt = r["created_at"].ToString()!
             };
         }
+
+        // ======================== 目标管理 ========================
+
+        public int InsertGoal(string title, string description = "", int totalMinutesGoal = 0)
+        {
+            const string q = @"INSERT INTO goals (title, description, total_minutes_goal, created_at)
+                VALUES (@t, @d, @m, @c); SELECT last_insert_rowid();";
+            using var c = CreateConnection();
+            using var cmd = new SQLiteCommand(q, c);
+            cmd.Parameters.AddWithValue("@t", title);
+            cmd.Parameters.AddWithValue("@d", description);
+            cmd.Parameters.AddWithValue("@m", totalMinutesGoal);
+            cmd.Parameters.AddWithValue("@c", DateTime.Now.ToString(DateFormat, CultureInfo.InvariantCulture));
+            return Convert.ToInt32(cmd.ExecuteScalar(), CultureInfo.InvariantCulture);
+        }
+
+        public void InsertGoalPhase(int goalId, string title, string desc, int order, int estMinutes)
+        {
+            const string q = @"INSERT INTO goal_phases (goal_id, title, description, phase_order, estimated_minutes, created_at)
+                VALUES (@g, @t, @d, @o, @e, @c)";
+            using var c = CreateConnection();
+            using var cmd = new SQLiteCommand(q, c);
+            cmd.Parameters.AddWithValue("@g", goalId);
+            cmd.Parameters.AddWithValue("@t", title); cmd.Parameters.AddWithValue("@d", desc);
+            cmd.Parameters.AddWithValue("@o", order); cmd.Parameters.AddWithValue("@e", estMinutes);
+            cmd.Parameters.AddWithValue("@c", DateTime.Now.ToString(DateFormat, CultureInfo.InvariantCulture));
+            cmd.ExecuteNonQuery();
+        }
+
+        public List<GoalData> GetGoals()
+        {
+            var list = new List<GoalData>();
+            using var c = CreateConnection();
+            using var cmd = new SQLiteCommand("SELECT * FROM goals ORDER BY created_at DESC", c);
+            using var r = cmd.ExecuteReader();
+            while (r.Read())
+                list.Add(new GoalData { Id = Convert.ToInt32(r["id"]), Title = r["title"].ToString()!,
+                    Description = r["description"]?.ToString() ?? "", Status = r["status"]?.ToString() ?? "active",
+                    TotalMinutesGoal = Convert.ToInt32(r["total_minutes_goal"]), CreatedAt = r["created_at"].ToString()! });
+            return list;
+        }
+
+        public List<GoalPhaseData> GetGoalPhases(int goalId)
+        {
+            var list = new List<GoalPhaseData>();
+            using var c = CreateConnection();
+            using var cmd = new SQLiteCommand("SELECT * FROM goal_phases WHERE goal_id=@g ORDER BY phase_order", c);
+            cmd.Parameters.AddWithValue("@g", goalId);
+            using var r = cmd.ExecuteReader();
+            while (r.Read())
+                list.Add(new GoalPhaseData { Id = Convert.ToInt32(r["id"]), GoalId = goalId,
+                    Title = r["title"].ToString()!, Description = r["description"]?.ToString() ?? "",
+                    PhaseOrder = Convert.ToInt32(r["phase_order"]), EstimatedMinutes = Convert.ToInt32(r["estimated_minutes"]),
+                    ActualMinutes = Convert.ToInt32(r["actual_minutes"]), Status = r["status"]?.ToString() ?? "pending",
+                    EffectiveRatio = Convert.ToDouble(r["effective_ratio"], CultureInfo.InvariantCulture) });
+            return list;
+        }
+
+        public void UpdateGoalStatus(int goalId, string status) { Exec("UPDATE goals SET status=@s, completed_at=@c WHERE id=@id",
+            ("@s", status), ("@c", status == "completed" ? DateTime.Now.ToString(DateFormat, CultureInfo.InvariantCulture) : (object?)null), ("@id", goalId)); }
+
+        public void CompletePhase(int phaseId, int actualMinutes, double effectiveRatio, string notes)
+        {
+            Exec(@"UPDATE goal_phases SET status='completed', actual_minutes=@m, effective_ratio=@r,
+                user_notes=@n, completed_at=@c WHERE id=@id",
+                ("@m", actualMinutes), ("@r", effectiveRatio), ("@n", notes),
+                ("@c", DateTime.Now.ToString(DateFormat, CultureInfo.InvariantCulture)), ("@id", phaseId));
+        }
+
+        private void Exec(string sql, params (string, object?)[] prms)
+        {
+            using var c = CreateConnection();
+            using var cmd = new SQLiteCommand(sql, c);
+            foreach (var (k, v) in prms) cmd.Parameters.AddWithValue(k, v ?? DBNull.Value);
+            cmd.ExecuteNonQuery();
+        }
     }
 
     public class TimeRecordData
@@ -871,5 +949,32 @@ namespace TimeTracker
         public int? ActivityId { get; set; }
         public int? UserId { get; set; }
         public string CreatedAt { get; set; } = string.Empty;
+    }
+
+    public class GoalData
+    {
+        public int Id { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string Status { get; set; } = "active";
+        public int TotalMinutesGoal { get; set; }
+        public string CreatedAt { get; set; } = string.Empty;
+        public string? CompletedAt { get; set; }
+    }
+
+    public class GoalPhaseData
+    {
+        public int Id { get; set; }
+        public int GoalId { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public int PhaseOrder { get; set; }
+        public int EstimatedMinutes { get; set; }
+        public int ActualMinutes { get; set; }
+        public string Status { get; set; } = "pending";
+        public double EffectiveRatio { get; set; }
+        public string UserNotes { get; set; } = string.Empty;
+        public string CreatedAt { get; set; } = string.Empty;
+        public string? CompletedAt { get; set; }
     }
 }

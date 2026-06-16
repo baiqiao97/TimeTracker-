@@ -76,6 +76,9 @@ namespace TimeTracker
             txtRetentionDays.Text = RetentionDays.ToString(CultureInfo.InvariantCulture);
             chkAutoStart.IsChecked = AutoStart;
             chkDarkMode.IsChecked = AppSettings.DarkMode;
+            txtAiKey.Text = AppSettings.AiApiKey;
+            rbAiOpenAI.IsChecked = AppSettings.AiProviderRaw == "OpenAI";
+            rbAiAnthropic.IsChecked = AppSettings.AiProviderRaw == "Anthropic";
             rbSimple.IsChecked = true;
             txtServerUrl.Text = AppSettings.ServerUrl;
             chkAutoSync.IsChecked = AppSettings.AutoSync;
@@ -159,6 +162,8 @@ namespace TimeTracker
             // 同步到全局 AppSettings
             AutoStart = chkAutoStart.IsChecked ?? false;
             AppSettings.DarkMode = chkDarkMode.IsChecked ?? false;
+            AppSettings.AiApiKey = txtAiKey.Text.Trim();
+            AppSettings.AiProviderRaw = rbAiAnthropic.IsChecked == true ? "Anthropic" : "OpenAI";
             AppSettings.MinPasswordLength = MinPasswordLength;
 
             try
