@@ -6,10 +6,20 @@ namespace TimeTracker
     {
         protected override void OnStartup(StartupEventArgs e)
         {
-            base.OnStartup(e);
+            try
+            {
+                base.OnStartup(e);
 
-            // 便携模式检测（--portable 参数）
-            AppSettings.InitPortable(e.Args);
+                // 便携模式检测（--portable 参数）
+                AppSettings.InitPortable(e.Args);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"初始化错误:\n{ex.GetType().Name}: {ex.Message}\n\n{ex.StackTrace}",
+                    "初始化错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                Shutdown(1);
+                return;
+            }
 
             // 全局未捕获异常处理 — 防止静默崩溃
             DispatcherUnhandledException += (s, args) =>

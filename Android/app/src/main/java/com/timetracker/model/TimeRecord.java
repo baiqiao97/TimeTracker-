@@ -18,7 +18,7 @@ public class TimeRecord {
     private boolean isForeground;
     private Integer activityId;
 
-    public TimeRecord(String packageName, String appName, long usageTime, Date date, String deviceId, Integer categoryId, boolean isForeground) {
+    public TimeRecord(String packageName, String appName, long usageTime, Date date, String deviceId, Integer categoryId, boolean isForeground, Integer activityId) {
         this.packageName = packageName;
         this.appName = appName;
         this.usageTime = usageTime;
@@ -26,7 +26,11 @@ public class TimeRecord {
         this.deviceId = deviceId;
         this.categoryId = categoryId;
         this.isForeground = isForeground;
+        this.activityId = activityId;
     }
+
+    // Room 兼容：无参构造函数
+    public TimeRecord() {}
 
     public int getId() {
         return id;

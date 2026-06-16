@@ -427,7 +427,8 @@ public class TrackingService extends Service {
                         new Date(),
                         deviceId,
                         categoryId,
-                        isForeground
+                        isForeground,
+                        null
                 );
                 // Activity mode: attach current activity id
                 if (com.timetracker.utils.AppSettings.isActivityMode(getApplicationContext())) {

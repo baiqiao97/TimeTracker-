@@ -1161,7 +1161,7 @@ namespace TimeTracker
             {
                 try
                 {
-                    var path = DatabaseManager.BackupDatabase();
+                    var path = _databaseManager.BackupDatabase();
                     if (!string.IsNullOrEmpty(path)) Logger.Info($"Database backed up: {path}");
                 }
                 catch (Exception ex) { Logger.Error("Auto backup failed", ex); }

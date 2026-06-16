@@ -222,6 +222,7 @@ static void InitDb(string path)
         "PRAGMA journal_mode=WAL",
         "CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY AUTOINCREMENT,username TEXT UNIQUE NOT NULL,password TEXT NOT NULL,token TEXT,expires_at TEXT,created_at TEXT)",
         "CREATE TABLE IF NOT EXISTS time_records(id INTEGER NOT NULL,process_name TEXT NOT NULL,window_title TEXT,usage_time INTEGER NOT NULL,date TEXT NOT NULL,device_id TEXT NOT NULL,category_id INTEGER,is_foreground INTEGER DEFAULT 1,activity_id INTEGER,user_id INTEGER NOT NULL,PRIMARY KEY(id,user_id))",
+        "CREATE TABLE IF NOT EXISTS manual_records(id INTEGER PRIMARY KEY AUTOINCREMENT,title TEXT NOT NULL,description TEXT DEFAULT '',start_time TEXT NOT NULL,duration_minutes INTEGER DEFAULT 0,category_id INTEGER DEFAULT NULL,activity_id INTEGER DEFAULT NULL,user_id INTEGER DEFAULT NULL,created_at TEXT NOT NULL)",
         "CREATE TABLE IF NOT EXISTS todo_items(id INTEGER NOT NULL,title TEXT NOT NULL,description TEXT DEFAULT '',is_completed INTEGER DEFAULT 0,priority INTEGER DEFAULT 1,due_date TEXT,created_at TEXT NOT NULL,completed_at TEXT,device_id TEXT NOT NULL,user_id INTEGER NOT NULL,PRIMARY KEY(id,user_id))",
         "CREATE TABLE IF NOT EXISTS schedules(id INTEGER NOT NULL,title TEXT NOT NULL,description TEXT DEFAULT '',start_time TEXT NOT NULL,end_time TEXT,is_all_day INTEGER DEFAULT 0,color TEXT DEFAULT '#6c5ce7',created_at TEXT NOT NULL,device_id TEXT NOT NULL,user_id INTEGER NOT NULL,PRIMARY KEY(id,user_id))"
 #pragma warning restore CA2100

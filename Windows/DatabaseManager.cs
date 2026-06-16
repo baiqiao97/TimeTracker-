@@ -439,9 +439,11 @@ namespace TimeTracker
             command.ExecuteNonQuery();
         }
 
-        public static string BackupDatabase(string? backupDir = null)
+        public string BackupDatabase(string? backupDir = null)
         {
-            var src = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "time_tracker.db");
+            var src = _dbPath;
+            // 移除附加的连接字符串参数
+            if (src.Contains(";", StringComparison.Ordinal)) src = src.Split(';')[0];
             if (!File.Exists(src)) return "";
 
             var dir = backupDir ?? Path.Combine(

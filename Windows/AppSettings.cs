@@ -24,7 +24,13 @@ namespace TimeTracker
         public static int RetentionDays { get; set; } = 90;
         public static bool AutoStart { get; set; } = false;
         public static string TrackingMode { get; set; } = "simple";
-        public static int? CurrentActivityId { get; set; }
+        private static readonly object _activityLock = new();
+        private static int? _currentActivityId;
+        public static int? CurrentActivityId
+        {
+            get { lock (_activityLock) return _currentActivityId; }
+            set { lock (_activityLock) _currentActivityId = value; }
+        }
         public static string ServerUrl { get; set; } = "";
         public static string AuthToken { get; set; } = "";
         public static bool AutoSync { get; set; } = false;

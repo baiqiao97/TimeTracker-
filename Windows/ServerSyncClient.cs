@@ -8,7 +8,7 @@ namespace TimeTracker
 {
     public static class ServerSyncClient
     {
-        private static readonly HttpClient _client = new() { Timeout = TimeSpan.FromSeconds(10) };
+        private static readonly HttpClient _client = new(new HttpClientHandler { UseCookies = false }) { Timeout = TimeSpan.FromSeconds(10) };
         private static readonly JsonSerializerOptions _jsonOpts = new()
             { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, WriteIndented = false };
 

@@ -11,6 +11,8 @@ public class Device {
     private String platform;
     private String lastSync;
 
+    public Device() {}
+
     public Device(String deviceId, String deviceName, String platform, String lastSync) {
         this.deviceId = deviceId;
         this.deviceName = deviceName;

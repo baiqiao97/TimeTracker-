@@ -129,23 +129,9 @@ namespace TimeTracker
             return (true, newRecords.Count, records.Count - newRecords.Count, null);
         }
 
-        /// <summary>同步数据：先导出再导入</summary>
+        /// <summary>同步数据到服务器（通过 ServerSyncClient）</summary>
         public static (bool success, string? error) SyncData(DatabaseManager databaseManager)
-        {
-            try
-            {
-                var (exportOk, _, _) = ExportData(databaseManager);
-                if (!exportOk)
-                    return (false, "导出本地数据失败");
-
-                var (_, _, _, importErr) = ImportData(databaseManager);
-                return importErr == null ? (true, null) : (false, importErr);
-            }
-            catch (Exception ex)
-            {
-                return (false, ex.Message);
-            }
-        }
+            => ServerSyncClient.SyncAsync(databaseManager).Result;
     }
 }
 
