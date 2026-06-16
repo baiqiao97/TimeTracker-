@@ -21,7 +21,7 @@ namespace TimeTracker
 
         private void LoadTrackingData()
         {
-            // 获取最近一周该目标相关时段的追踪数据
+            // 获取最近30天该目标相关时段的追踪数据
             var week = _db.GetTimeRecords(DateTime.Now.AddDays(-30), DateTime.Now);
             var totalMs = week.Sum(r => r.UsageTime);
             var ts = TimeSpan.FromMilliseconds(totalMs);

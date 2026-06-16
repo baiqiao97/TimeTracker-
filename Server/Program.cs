@@ -28,8 +28,9 @@ _ = Task.Run(async () =>
     {
         await Task.Delay(TimeSpan.FromMinutes(2));
         var now = DateTime.UtcNow;
-        foreach (var key in rateLimitStore.Keys.Where(k => rateLimitStore.TryGetValue(k, out var v) && v.window < now).ToArray())
-        {
+// 清理过期限制（线程安全）
+        var expiredKeys = rateLimitStore.Where(kvp => kvp.Value.window < now).Select(kvp => kvp.Key).ToArray();
+        foreach (var key in expiredKeys)
             rateLimitStore.TryRemove(key, out _);
         }
     }

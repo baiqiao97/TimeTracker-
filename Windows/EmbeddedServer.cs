@@ -158,8 +158,7 @@ namespace TimeTracker
             var since = req.QueryString["since"];
             var records = _db!.GetTimeRecords(
                 since != null ? DateTime.Parse(since, CultureInfo.InvariantCulture) : DateTime.MinValue,
-                DateTime.MaxValue,
-                auth.Value.userId);
+                DateTime.MaxValue);
             return JsonSerializer.Serialize(records, _json);
         }
 
@@ -174,7 +173,7 @@ namespace TimeTracker
             int count = 0;
             if (records != null)
             {
-                var existing = _db!.GetAllRecordKeys(auth.Value.userId);
+                var existing = _db!.GetAllRecordKeys();
                 var toAdd = records.Where(r =>
                 {
                     if (!DateTime.TryParse(r.Date, CultureInfo.InvariantCulture, DateTimeStyles.None, out var recordDate)) return false;

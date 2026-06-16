@@ -129,9 +129,19 @@ namespace TimeTracker
             return (true, newRecords.Count, records.Count - newRecords.Count, null);
         }
 
-        /// <summary>同步数据到服务器（通过 ServerSyncClient）</summary>
-        public static (bool success, string? error) SyncData(DatabaseManager databaseManager)
-            => ServerSyncClient.SyncAsync(databaseManager).Result;
+    public static class SyncHelper
+    {
+        public static async Task SyncDatabaseAsync(DatabaseManager databaseManager)
+        {
+            try
+            {
+                await ServerSyncClient.SyncAsync(databaseManager);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("SyncDatabase error", ex);
+            }
+        }
     }
 }
 

@@ -1022,18 +1022,18 @@ namespace TimeTracker
         private async void DoSync()
         {
             lblCurrentApp.Text = "同步中...";
-            var (ok, error) = await Task.Run(
-                () => DataSyncUtils.SyncData(_databaseManager));
-            if (ok)
+            try
             {
+                await DataSyncUtils.SyncHelper.SyncDatabaseAsync(_databaseManager);
                 NotificationHelper.Show("同步完成", "数据已导出并合并到本地");
                 LoadStats();
+                lblCurrentApp.Text = "同步完成";
             }
-            else
+            catch (Exception ex)
             {
-                NotificationHelper.Show("同步失败", error ?? "未知错误", false);
+                NotificationHelper.Show("同步失败", ex.Message ?? "未知错误", false);
+                lblCurrentApp.Text = "同步失败";
             }
-            lblCurrentApp.Text = ok ? "同步完成" : "同步失败";
         }
 
         private void ManageActivities()
@@ -1050,15 +1050,6 @@ namespace TimeTracker
 
             var lb = new ListBox { Height = 240, BorderThickness = new Thickness(0),
                 Background = Brushes.White, Margin = new Thickness(0, 0, 0, 12) };
-            lb.ItemTemplate = new DataTemplate(() =>
-            {
-                var sp2 = new StackPanel();
-                var tb = new TextBlock();
-                tb.SetBinding(TextBlock.TextProperty, new System.Windows.Data.Binding("Name"));
-                tb.FontSize = 13; tb.FontWeight = FontWeights.SemiBold;
-                sp2.Children.Add(tb);
-                return new FrameworkElementFactory(typeof(StackPanel)) == null ? null : new FrameworkElementFactory(typeof(ContentPresenter));
-            });
             // 手动构建 ListBox ItemTemplate
             var factory = new FrameworkElementFactory(typeof(Border));
             factory.SetValue(Border.PaddingProperty, new Thickness(12, 8, 12, 8));

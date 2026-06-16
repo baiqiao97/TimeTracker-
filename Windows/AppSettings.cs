@@ -58,21 +58,35 @@ namespace TimeTracker
             {
                 if (File.Exists(ConfigFile))
                 {
-                    var doc = JsonDocument.Parse(File.ReadAllText(ConfigFile));
-                    var r = doc.RootElement;
-                    if (r.TryGetProperty("interval", out var i)) TrackingIntervalSeconds = Math.Max(1, i.GetInt32());
-                    if (r.TryGetProperty("retention", out var d)) RetentionDays = Math.Max(1, d.GetInt32());
-                    if (r.TryGetProperty("autoStart", out var a)) AutoStart = a.GetBoolean();
-                    if (r.TryGetProperty("trackingMode", out var m)) TrackingMode = m.GetString() ?? "simple";
-                    if (r.TryGetProperty("currentActivityId", out var aid) && aid.ValueKind != JsonValueKind.Null)
+                    var json = File.ReadAllText(ConfigFile);
+                    using var doc = JsonDocument.Parse(json);
+                    var root = doc.RootElement;
+                    if (root.TryGetProperty("interval", out var i)) TrackingIntervalSeconds = Math.Max(1, i.GetInt32());
+                    if (root.TryGetProperty("retention", out var d)) RetentionDays = Math.Max(1, d.GetInt32());
+                    if (root.TryGetProperty("autoStart", out var a)) AutoStart = a.GetBoolean();
+                    if (root.TryGetProperty("trackingMode", out var m)) TrackingMode = m.GetString() ?? "simple";
+                    if (root.TryGetProperty("currentActivityId", out var aid) && aid.ValueKind != JsonValueKind.Null)
                         CurrentActivityId = aid.GetInt32();
-                    if (r.TryGetProperty("serverUrl", out var su)) ServerUrl = su.GetString() ?? "";
-                    if (r.TryGetProperty("autoSync", out var asy)) AutoSync = asy.GetBoolean();
-                    if (r.TryGetProperty("authToken", out var at)) AuthToken = at.GetString() ?? "";
-                    if (r.TryGetProperty("hostServer", out var hs)) HostServer = hs.GetBoolean();
-                    if (r.TryGetProperty("serverPort", out var sp)) ServerPort = sp.GetInt32();
-                    if (r.TryGetProperty("minPasswordLength", out var mpl)) MinPasswordLength = Math.Max(1, mpl.GetInt32());
-                    if (r.TryGetProperty("darkMode", out var dm)) DarkMode = dm.GetBoolean();
+                    if (root.TryGetProperty("serverUrl", out var s)) ServerUrl = s.GetString() ?? "";
+                    if (root.TryGetProperty("autoSync", out var a2)) AutoSync = a2.GetBoolean();
+                    if (root.TryGetProperty("authToken", out var at)) AuthToken = at.GetString() ?? "";
+                    if (root.TryGetProperty("hostServer", out var h)) HostServer = h.GetBoolean();
+                    if (root.TryGetProperty("serverPort", out var sp)) ServerPort = sp.GetInt32();
+                    if (root.TryGetProperty("minPasswordLength", out var ml)) MinPasswordLength = Math.Max(1, ml.GetInt32());
+                    if (root.TryGetProperty("darkMode", out var dm)) DarkMode = dm.GetBoolean();
+                    if (root.TryGetProperty("aiApiKey", out var ai)) AiApiKey = ai.GetString() ?? "";
+                    if (root.TryGetProperty("aiProviderRaw", out var pr)) AiProviderRaw = pr.GetString() ?? "OpenAI";
+                    if (root.TryGetProperty("databasePassword", out var dp)) DatabasePassword = dp.GetString() ?? "";
+                    if (root.TryGetProperty("autoExportEnabled", out var ae)) AutoExportEnabled = ae.GetBoolean();
+                    if (root.TryGetProperty("autoExportIntervalMinutes", out var aei)) AutoExportIntervalMinutes = aei.GetInt32();
+                    if (root.TryGetProperty("lastSyncTime", out var ls) && ls.ValueKind != JsonValueKind.Null)
+                    {
+                        var ts = ls.GetString();
+                        if (!string.IsNullOrEmpty(ts) && DateTime.TryParse(ts, out var dt))
+                            LastSyncTime = dt;
+                        else
+                            LastSyncTime = DateTime.MinValue;
+                    }
                 }
             }
             catch (Exception ex)

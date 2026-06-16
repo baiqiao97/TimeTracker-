@@ -98,7 +98,7 @@ public class TrackingService extends Service {
             if (!isPaused) {
                 trackAppUsage();
             }
-            int interval = isDeviceIdle() ? 300000 : 30000; // 30秒活跃 / 5分钟空闲
+            int interval = isDeviceIdle() ? 300000 : 10000; // 10秒活跃 / 5分钟空闲
             handler.postDelayed(trackingRunnable, interval);
         };
         // 延迟启动追踪，等待分类映射加载完成

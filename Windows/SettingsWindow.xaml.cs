@@ -160,7 +160,6 @@ namespace TimeTracker
             if (int.TryParse(txtMinPwdLen.Text, out int mpl) && mpl >= 1) MinPasswordLength = mpl;
 
             // 同步到全局 AppSettings
-            AutoStart = chkAutoStart.IsChecked ?? false;
             AppSettings.DarkMode = chkDarkMode.IsChecked ?? false;
             AppSettings.AiApiKey = txtAiKey.Text.Trim();
             AppSettings.AiProviderRaw = rbAiAnthropic.IsChecked == true ? "Anthropic" : "OpenAI";

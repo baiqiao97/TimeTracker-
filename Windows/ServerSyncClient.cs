@@ -23,18 +23,25 @@ namespace TimeTracker
                 var json = JsonSerializer.Serialize(new { username, password }, _jsonOpts);
                 using var content = new StringContent(json, Encoding.UTF8, "application/json");
                 var resp = await _client.PostAsync($"{ServerUrl}/api/auth/register", content);
-                var body = await resp.Content.ReadAsStringAsync();
-                if (!resp.IsSuccessStatusCode)
-                {
-                    using var doc = JsonDocument.Parse(body);
-                    var err = doc.RootElement.TryGetProperty("error", out var e) ? e.GetString() : "注册失败";
-                    return (false, err);
-                }
-                using var doc2 = JsonDocument.Parse(body);
-                var token = doc2.RootElement.GetProperty("token").GetString()!;
-                AppSettings.AuthToken = token;
-                AppSettings.Save();
-                return (true, null);
+            var body = await resp.Content.ReadAsStringAsync();
+            using var doc = JsonDocument.Parse(body);
+            var root = doc.RootElement;
+
+            if (!resp.IsSuccessStatusCode || root.TryGetProperty("error", out var errProp))
+            {
+                var err = errProp.GetString() ?? "注册失败";
+                return (false, err);
+            }
+
+            var token = root.TryGetProperty("token", out var t) ? t.GetString() : "";
+            if (string.IsNullOrEmpty(token))
+            {
+                return (false, "注册响应缺少 token");
+            }
+
+            AppSettings.AuthToken = token;
+            AppSettings.Save();
+            return (true, null);
             }
             catch (Exception ex) { return (false, ex.Message); }
         }
@@ -46,15 +53,32 @@ namespace TimeTracker
                 var json = JsonSerializer.Serialize(new { username, password }, _jsonOpts);
                 using var content = new StringContent(json, Encoding.UTF8, "application/json");
                 var resp = await _client.PostAsync($"{ServerUrl}/api/auth/login", content);
-                if (!resp.IsSuccessStatusCode) return (false, "用户名或密码错误");
                 var body = await resp.Content.ReadAsStringAsync();
                 using var doc = JsonDocument.Parse(body);
-                var token = doc.RootElement.GetProperty("token").GetString()!;
+                var root = doc.RootElement;
+
+                if (!resp.IsSuccessStatusCode || root.TryGetProperty("error", out var errProp))
+                {
+                    return (false, errProp.GetString());
+                }
+
+                var token = root.TryGetProperty("token", out var t) ? t.GetString() : "";
+
+                if (string.IsNullOrEmpty(token))
+                {
+                    return (false, "登录响应缺少 token");
+                }
+
                 AppSettings.AuthToken = token;
+                AppSettings.LastSyncTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
                 AppSettings.Save();
+
                 return (true, null);
             }
-            catch (Exception ex) { return (false, ex.Message); }
+            catch (Exception ex)
+            {
+                return (false, ex.Message);
+            }
         }
 
         public static async Task<(bool ok, string? err)> SyncAsync(DatabaseManager db)
